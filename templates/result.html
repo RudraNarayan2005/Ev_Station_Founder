@@ -3,101 +3,97 @@
 <head>
     <title>EV Stations - {{ stations|length }} Found</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Inter', sans-serif; background: #f8fafc; color: #1e293b; }
-        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family: Arial, sans-serif; background:#f8fafc; }
+
+        .container { max-width:1200px; margin:auto; padding:20px; }
 
         .header {
-            background: linear-gradient(135deg, #1e293b, #334155);
-            color: white; padding: 30px; border-radius: 20px;
-            text-align: center; margin-bottom: 25px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            background: linear-gradient(135deg,#1e293b,#334155);
+            color:white;
+            padding:30px;
+            border-radius:20px;
+            text-align:center;
+            margin-bottom:25px;
         }
 
-        .stats { display: flex; gap: 15px; justify-content: center; margin: 20px 0; flex-wrap: wrap; }
+        .stats { display:flex; gap:15px; justify-content:center; flex-wrap:wrap; margin-bottom:20px; }
+
         .stat {
-            background: white; padding: 15px 25px; border-radius: 16px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center;
-            border: 1px solid #e2e8f0; min-width: 150px;
+            background:white;
+            padding:15px 25px;
+            border-radius:16px;
+            box-shadow:0 4px 6px rgba(0,0,0,0.05);
+            text-align:center;
         }
-        .stat-val { font-size: 1.8em; font-weight: 800; color: #10b981; }
-        .stat-label { font-size: 0.85em; color: #64748b; font-weight: 600; text-transform: uppercase; }
+
+        .stat-val { font-size:1.8em; font-weight:bold; color:#10b981; }
+        .stat-label { font-size:0.85em; color:#64748b; }
 
         .route-box {
             background:white;
-            padding:15px;
+            padding:20px;
             border-radius:15px;
-            margin:20px 0;
+            margin-bottom:20px;
             box-shadow:0 4px 10px rgba(0,0,0,0.05);
         }
 
         #map {
-            height: 450px;
-            width: 100%;
-            border-radius: 20px;
-            margin: 20px 0;
-            border: 4px solid white;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            height:450px;
+            width:100%;
+            border-radius:20px;
+            margin:20px 0;
+        }
+
+        .autocomplete-list {
+            position:absolute;
+            background:white;
+            border:1px solid #ddd;
+            width:100%;
+            max-height:200px;
+            overflow-y:auto;
+            border-radius:8px;
+            z-index:9999;
+        }
+
+        .autocomplete-item {
+            padding:8px;
+            cursor:pointer;
+        }
+
+        .autocomplete-item:hover {
+            background:#f1f5f9;
         }
 
         .stations-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 20px;
+            display:grid;
+            grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+            gap:20px;
         }
 
         .station-card {
-            background: white;
-            padding: 20px;
-            border-radius: 18px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            transition: 0.3s;
-            border-left: 5px solid #10b981;
-            position: relative;
-        }
-
-        .station-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 24px rgba(0,0,0,0.1);
-        }
-
-        .dist-tag {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: #f1f5f9;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-weight: 700;
-            color: #3b82f6;
-            font-size: 0.9em;
+            background:white;
+            padding:20px;
+            border-radius:18px;
+            box-shadow:0 4px 12px rgba(0,0,0,0.05);
+            border-left:5px solid #10b981;
         }
 
         .btn-nav {
-            display: inline-block;
-            width: 100%;
-            text-align: center;
-            background: #3b82f6;
-            color: white;
-            padding: 12px;
-            border-radius: 12px;
-            text-decoration: none;
-            font-weight: 600;
-            margin-top: 15px;
-        }
-
-        .back-btn {
-            display: inline-block;
-            margin-top: 30px;
-            color: #64748b;
-            text-decoration: none;
-            font-weight: 600;
+            display:inline-block;
+            width:100%;
+            text-align:center;
+            background:#3b82f6;
+            color:white;
+            padding:10px;
+            border-radius:10px;
+            text-decoration:none;
+            margin-top:10px;
         }
     </style>
 </head>
@@ -107,18 +103,16 @@
 
     <div class="header">
         <h1>⚡ Reachable EV Stations</h1>
-        <p style="opacity: 0.8; margin-top: 8px;">
-            Analysis based on your current location and charge
-        </p>
+        <p>Smart EV Range & Route Planner</p>
     </div>
 
     <div class="stats">
         <div class="stat">
             <div class="stat-val">{{ battery }}%</div>
-            <div class="stat-label">Current Charge</div>
+            <div class="stat-label">Battery</div>
         </div>
         <div class="stat">
-            <div class="stat-val">{{ max_range }}km</div>
+            <div class="stat-val">{{ max_range }} km</div>
             <div class="stat-label">Safe Range</div>
         </div>
         <div class="stat">
@@ -127,91 +121,134 @@
         </div>
     </div>
 
-    <!-- ROUTE INPUT -->
+    <!-- ROUTE BOX -->
     <div class="route-box">
-        <h3 style="margin-bottom:10px;">Plan Route</h3>
-        <input id="source" type="text" placeholder="Enter Source"
-               style="padding:8px;width:45%;margin-right:10px;border-radius:8px;border:1px solid #ccc;">
-        <input id="destination" type="text" placeholder="Enter Destination"
-               style="padding:8px;width:45%;border-radius:8px;border:1px solid #ccc;">
+        <h3>Plan Route</h3>
+        <br>
+
+        <div style="position:relative; display:inline-block; width:45%;">
+            <input id="source" type="text" placeholder="Enter Source"
+                   style="padding:8px;width:100%;border-radius:8px;border:1px solid #ccc;">
+            <div id="source-list" class="autocomplete-list"></div>
+        </div>
+
+        <div style="position:relative; display:inline-block; width:45%; margin-left:10px;">
+            <input id="destination" type="text" placeholder="Enter Destination"
+                   style="padding:8px;width:100%;border-radius:8px;border:1px solid #ccc;">
+            <div id="destination-list" class="autocomplete-list"></div>
+        </div>
+
+        <br><br>
+
         <button onclick="getRoute()"
-                style="margin-top:10px;padding:8px 15px;border:none;background:#10b981;color:white;border-radius:8px;cursor:pointer;">
+                style="padding:10px 15px;border:none;background:#10b981;color:white;border-radius:8px;cursor:pointer;">
             Find Route
         </button>
     </div>
 
     <div id="map"></div>
 
+    <!-- STATIONS -->
     <div class="stations-grid">
         {% for s in stations %}
         <div class="station-card">
-            <div class="dist-tag">{{ s.distance }} km</div>
-            <h3 style="margin-bottom: 10px; padding-right: 60px;">{{ s.name }}</h3>
-            <p style="font-size: 0.9em; color: #64748b;">
-                <i class="fas fa-map-marker-alt"></i> {{ s.address }}
-            </p>
+            <h3>{{ s.name }}</h3>
+            <p>{{ s.address }}</p>
+            <p><b>{{ s.distance }} km away</b></p>
             <a href="https://www.google.com/maps/dir/?api=1&destination={{ s.lat }},{{ s.lon }}"
                target="_blank" class="btn-nav">
-                <i class="fas fa-location-arrow"></i> Navigate Now
+               Navigate
             </a>
         </div>
         {% endfor %}
     </div>
-
-    <a href="/" class="back-btn">
-        <i class="fas fa-arrow-left"></i> Change Location or Battery
-    </a>
 
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
+
+// INIT MAP
 const map = L.map('map').setView([{{ u_lat }}, {{ u_lon }}], 11);
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png')
-    .addTo(map);
-
-L.marker([{{ u_lat }}, {{ u_lon }}])
-    .addTo(map)
-    .bindPopup('<b>Your Vehicle</b>')
-    .openPopup();
-
-L.circle([{{ u_lat }}, {{ u_lon }}], {
-    color: '#10b981',
-    fillColor: '#10b981',
-    fillOpacity: 0.15,
-    weight: 2,
-    radius: {{ max_range }} * 1000
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom:19
 }).addTo(map);
 
+// USER MARKER
+L.marker([{{ u_lat }}, {{ u_lon }}])
+    .addTo(map)
+    .bindPopup("Your Vehicle")
+    .openPopup();
+
+// RANGE CIRCLE
+L.circle([{{ u_lat }}, {{ u_lon }}], {
+    radius: {{ max_range }} * 1000,
+    color:'#10b981',
+    fillOpacity:0.15
+}).addTo(map);
+
+// STATION MARKERS
 {% for s in stations %}
 L.circleMarker([{{ s.lat }}, {{ s.lon }}], {
-    radius: 8,
-    fillColor: "#3b82f6",
-    color: "#fff",
-    weight: 2,
-    fillOpacity: 1
+    radius:8,
+    fillColor:"#3b82f6",
+    color:"#fff",
+    weight:2,
+    fillOpacity:1
 }).addTo(map)
-  .bindPopup("<b>{{ s.name }}</b><br>{{ s.distance }} km away");
+.bindPopup("<b>{{ s.name }}</b><br>{{ s.distance }} km away");
 {% endfor %}
 
-map.fitBounds(
-    L.circle([{{ u_lat }}, {{ u_lon }}],
-    { radius: {{ max_range }} * 1000 }).getBounds()
-);
+// AUTOCOMPLETE
+function setupAutocomplete(inputId, listId) {
+    const input = document.getElementById(inputId);
+    const list = document.getElementById(listId);
 
-// ROUTE FEATURE
+    input.addEventListener("input", async function () {
+        const query = this.value;
+        if (query.length < 3) {
+            list.innerHTML = "";
+            return;
+        }
 
+        const response = await fetch(
+            `https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=5`
+        );
+
+        const data = await response.json();
+        list.innerHTML = "";
+
+        data.forEach(place => {
+            const item = document.createElement("div");
+            item.className = "autocomplete-item";
+            item.innerText = place.display_name;
+
+            item.onclick = function () {
+                input.value = place.display_name;
+                list.innerHTML = "";
+            };
+
+            list.appendChild(item);
+        });
+    });
+
+    document.addEventListener("click", function (e) {
+        if (e.target !== input) list.innerHTML = "";
+    });
+}
+
+setupAutocomplete("source", "source-list");
+setupAutocomplete("destination", "destination-list");
+
+// ROUTING
 async function getCoordinates(place) {
     const response = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${place}`
     );
     const data = await response.json();
-    if (data.length === 0) {
-        alert("Location not found: " + place);
-        return null;
-    }
+    if (data.length === 0) return null;
     return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
 }
 
@@ -222,31 +259,33 @@ async function getRoute() {
     const destination = document.getElementById("destination").value;
 
     if (!source || !destination) {
-        alert("Please enter both source and destination");
+        alert("Enter both locations");
         return;
     }
 
-    const srcCoords = await getCoordinates(source);
-    const destCoords = await getCoordinates(destination);
-    if (!srcCoords || !destCoords) return;
+    const src = await getCoordinates(source);
+    const dest = await getCoordinates(destination);
+    if (!src || !dest) {
+        alert("Location not found");
+        return;
+    }
 
     const response = await fetch(
-        `https://router.project-osrm.org/route/v1/driving/${srcCoords[1]},${srcCoords[0]};${destCoords[1]},${destCoords[0]}?overview=full&geometries=geojson`
+        `https://router.project-osrm.org/route/v1/driving/${src[1]},${src[0]};${dest[1]},${dest[0]}?overview=full&geometries=geojson`
     );
 
     const data = await response.json();
     const route = data.routes[0].geometry;
 
-    if (routeLayer) {
-        map.removeLayer(routeLayer);
-    }
+    if (routeLayer) map.removeLayer(routeLayer);
 
     routeLayer = L.geoJSON(route, {
-        style: { color: "#ef4444", weight: 5 }
+        style:{ color:"#ef4444", weight:5 }
     }).addTo(map);
 
     map.fitBounds(routeLayer.getBounds());
 }
+
 </script>
 
 </body>
