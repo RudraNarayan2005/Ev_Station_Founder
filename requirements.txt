@@ -1,4 +1,6 @@
 Flask
 gunicorn
 pandas
-werkzeug
+numpy
+scikit-learn
+Werkzeug
