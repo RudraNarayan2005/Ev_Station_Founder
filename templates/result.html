@@ -714,7 +714,7 @@ async function getRoute() {
 
     let routeCoords, totalKm, totalMins = null;
 
-    // ── OSRM routing: try driving, then foot, then straight-line ────────────────
+    // ── OSRM routing: foot profile gives actual local road distance ─────────────
     let fetched = false;
 
     async function tryOSRM(profile) {
@@ -732,23 +732,21 @@ async function getRoute() {
       return null;
     }
 
-    // driving gives real road km; foot gives walking km (closest to Google Maps local nav)
-    for (const profile of ['driving', 'foot']) {
-      if (fetched) break;
-      try {
-        const route = await tryOSRM(profile);
-        if (route) {
-          routeCoords = route.geometry.coordinates;
-          totalKm     = (route.distance / 1000).toFixed(1);
-          totalMins   = Math.round(route.duration / 60);
-          fetched     = true;
-        }
-      } catch(e) { console.warn(`OSRM ${profile} failed:`, e); }
-    }
+    // Use foot profile — follows actual local roads, not highways
+    // This matches Google Maps walking/local navigation distance correctly
+    try {
+      const route = await tryOSRM('foot');
+      if (route) {
+        routeCoords = route.geometry.coordinates;
+        totalKm     = (route.distance / 1000).toFixed(1);
+        totalMins   = Math.round(route.duration / 60);
+        fetched     = true;
+      }
+    } catch(e) { console.warn('OSRM foot failed:', e); }
 
     // Straight-line fallback (always works)
     if (!fetched) {
-      console.warn('All OSRM profiles failed — using straight line');
+      console.warn('OSRM failed — using straight line');
       const steps = 50;
       routeCoords = [];
       for (let i = 0; i <= steps; i++) {
