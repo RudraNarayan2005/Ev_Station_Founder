@@ -3,6 +3,6 @@ gunicorn
 pandas
 numpy
 scikit-learn
-werkzeug
+Werkzeug
 requests
 joblib
