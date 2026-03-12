@@ -495,7 +495,7 @@ def autocomplete():
                 'key':            OPENCAGE_API_KEY,
                 'limit':          6,
                 'language':       'en',
-                'countrycode':    'in',       # India only
+                'countrycode':    'in',
                 'no_annotations': 1,
                 'no_record':      1,
             },
@@ -506,7 +506,6 @@ def autocomplete():
         for item in data.get('results', []):
             comp     = item.get('components', {})
             geometry = item.get('geometry', {})
-            # Build clean short label: neighbourhood → city → state (max 3 parts)
             name_parts = []
             for field in ['neighbourhood', 'suburb', 'village', 'town',
                           'city', 'county', 'state_district', 'state']:
