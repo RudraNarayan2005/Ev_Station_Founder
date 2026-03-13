@@ -1,16 +1,3 @@
-"""
-knn_clustering.py
------------------
-KNN + KMeans clustering module for EV Charging Station Finder.
-Plug-and-play: import and use without modifying any existing code.
-
-Features:
-  1. KMeans  → Groups all stations into geographic zones/clusters
-  2. KNN     → For any (lat, lon), finds the K nearest charging stations
-  3. Cluster summary → Stats per cluster (count, centroid, dominant state)
-  4. Smart route suggest → Best station per cluster along a route corridor
-"""
-
 import numpy as np
 import pandas as pd
 from sklearn.cluster import KMeans
