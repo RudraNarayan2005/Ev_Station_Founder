@@ -1,162 +1,178 @@
-# ⚡ EV Station Finder
+# ⚡ Smart EV Charge Finder
 
-A smart **Electric Vehicle Charging Station Finder** web application built with **Python (Flask)** and **Machine Learning**. It helps EV users in India locate the nearest charging stations using KNN-based clustering and a trained ML model.
-
----
-
-## 📋 Table of Contents
-
-- [About the Project](#about-the-project)
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Project Structure](#project-structure)
-- [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Installation](#installation)
-  - [Training the Model](#training-the-model)
-  - [Running the Application](#running-the-application)
-- [How It Works](#how-it-works)
-- [Dataset](#dataset)
-- [Contributing](#contributing)
-- [License](#license)
+A Flask web application that helps electric vehicle owners in India find nearby charging stations based on their current location and remaining battery level. It uses **KNN + KMeans machine learning** to cluster stations geographically and predict the best options within the vehicle's range.
 
 ---
 
-## 📖 About the Project
+## Features
 
-With the rapid growth of electric vehicles in India, finding a nearby charging station remains a challenge. **EV Station Finder** solves this by allowing users to enter their location and instantly discover the closest EV charging stations — powered by a KNN-based machine learning model trained on real India EV station data.
-
----
-
-## ✨ Features
-
-- 📍 Find nearest EV charging stations based on user location
-- 🤖 ML-powered recommendations using K-Nearest Neighbors (KNN) clustering
-- 🗺️ India-wide EV station dataset (`india_ev_charging_stations.csv`)
-- 👤 User authentication (register/login) with SQLite database
-- 🌐 Clean web interface built with HTML, CSS & Flask templates
-- 🔌 Easily extensible with new station routes
+- **Battery-aware range calculation** — enter your battery percentage and the app computes the maximum distance you can travel before needing a charge
+- **KNN nearest-station lookup** — uses a ball-tree KNN model with haversine distance for accurate geo-proximity search
+- **KMeans geographic clustering** — groups ~1,500 stations across India into 15 regional zones, colour-coded on the map
+- **Random Forest demand scoring** — ranks stations by estimated demand so you can prioritise quieter ones
+- **Interactive cluster map** — full-screen map showing all stations coloured by zone with cluster summaries
+- **Location autocomplete** — powered by the OpenCage Geocoding API (India only)
+- **User authentication** — register, login, and logout with hashed passwords (Werkzeug)
+- **Admin panel** — basic admin view for user management
 
 ---
 
-## 🛠 Tech Stack
+## Tech Stack
 
-| Layer         | Technology                        |
-|---------------|-----------------------------------|
-| Backend       | Python, Flask                     |
-| ML / AI       | Scikit-learn, KNN Clustering      |
-| Database      | SQLite (`users.db`)               |
-| Frontend      | HTML5, CSS3 (Jinja2 Templates)    |
-| Dataset       | India EV Charging Stations CSV    |
-| Data Handling | Pandas, NumPy                     |
+| Layer | Technology |
+|---|---|
+| Backend | Python 3.11, Flask |
+| ML / Data | scikit-learn (KMeans, KNN, RandomForest), pandas, numpy |
+| Database | SQLite (`users.db`) |
+| Frontend | Jinja2 templates, vanilla CSS/JS |
+| Geocoding | OpenCage API |
+| Deployment | Gunicorn, `runtime.txt` for platform configuration |
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
-Ev_Station_Founder/
-├── static/                        # CSS, JS, and static assets
-├── templates/                     # HTML templates (Jinja2)
-├── app.py                         # Main Flask application
-├── database.py                    # Database setup and user management
-├── ml_model.py                    # ML model definition and prediction logic
-├── knn_clustering.py              # KNN clustering implementation
-├── train_model.py                 # Script to train and save the ML model
-├── new_routes_to_add.py           # Utility for adding new station routes
-├── india_ev_charging_stations.csv # Dataset of EV stations across India
-├── users.db                       # SQLite database for user accounts
-├── requirements.txt               # Python dependencies
-└── README.md
+Ev_Station_Founder-main/
+├── app.py                          # Main Flask application & all routes
+├── knn_clustering.py               # EVStationClusterer class (KMeans + KNN)
+├── ml_model.py                     # ML model utilities
+├── train_model.py                  # Standalone model training script
+├── new_routes_to_add.py            # Helper for adding new station routes
+├── database.py                     # Database helpers
+├── india_ev_charging_stations.csv  # Dataset (~1,547 stations across India)
+├── requirements.txt
+├── runtime.txt
+├── users.db                        # SQLite database (auto-created)
+└── templates/
+│   ├── home.html                   # Landing page
+│   ├── login.html                  # Login page
+│   ├── register.html               # Registration page
+│   ├── index.html                  # Search dashboard
+│   ├── result.html                 # Search results + map
+│   ├── cluster_map.html            # Full cluster map view
+│   └── admin.html                  # Admin panel
+└── static/
+    ├── style.css
+    ├── stations.png
+    └── forecast.png
 ```
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
-- Python 3.8 or higher
+- Python 3.11+
 - pip
 
 ### Installation
 
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/your-username/Ev_Station_Founder.git
+   cd Ev_Station_Founder
+   ```
+
+2. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Run the app**
+   ```bash
+   python app.py
+   ```
+
+4. **Open your browser** at `http://127.0.0.1:5000`
+
+The SQLite database and ML models are initialised automatically on first run.
+
+---
+
+## Usage
+
+1. **Register** a new account or **Login** with existing credentials
+2. On the dashboard, enter your **location** (type to use autocomplete) and **battery percentage**
+3. The app calculates your maximum range and finds all EV stations within reach
+4. Results are displayed on an interactive map with distance, demand score, and cluster zone
+5. Visit **Cluster Map** from the nav bar to explore all stations grouped by region
+
+---
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/` | Landing page |
+| `GET/POST` | `/register` | User registration |
+| `GET/POST` | `/login` | User login |
+| `GET` | `/logout` | Logout and clear session |
+| `GET` | `/dashboard` | Search dashboard (auth required) |
+| `POST` | `/result` | Submit search, get nearby stations |
+| `GET` | `/knn?lat=&lon=&k=` | JSON API — K nearest stations |
+| `GET` | `/cluster-map` | Interactive full cluster map |
+| `GET` | `/autocomplete?q=` | Location autocomplete (OpenCage) |
+
+---
+
+## Dataset
+
+`india_ev_charging_stations.csv` contains ~1,547 EV charging stations across India with the following fields:
+
+| Field | Description |
+|---|---|
+| `name` | Station name |
+| `state` | Indian state |
+| `city` | City |
+| `address` | Full address |
+| `lattitude` | Latitude (decimal degrees) |
+| `longitude` | Longitude (decimal degrees) |
+| `type` | Charger type code |
+
+---
+
+## ML Models
+
+### KMeans Geographic Clustering
+Stations are clustered into **15 regional zones** using KMeans with `k-means++` initialisation. Coordinates are standardised before clustering so latitude and longitude contribute equally.
+
+### KNN Nearest-Station Lookup
+A ball-tree KNN model with **haversine metric** finds the K closest stations to any query point. Inputs are converted to radians for accurate spherical distance computation.
+
+### Random Forest Demand Scorer
+A `RandomForestRegressor` (50 estimators) trained on station coordinates predicts a relative demand score (20–200). This is used to rank stations of equal distance — lower-demand stations are surfaced first.
+
+---
+
+## Configuration
+
+The secret key and API key are currently hardcoded in `app.py`. For production, move them to environment variables:
+
 ```bash
-# Clone the repository
-git clone https://github.com/RudraNarayan2005/Ev_Station_Founder.git
-
-# Navigate into the project directory
-cd Ev_Station_Founder
-
-# Create a virtual environment (recommended)
-python -m venv venv
-source venv/bin/activate      # On Windows: venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
+export SECRET_KEY="your-secret-key"
+export OPENCAGE_API_KEY="your-opencage-key"
 ```
 
-### Training the Model
-
-Before running the app for the first time, train the ML model:
-
-```bash
-python train_model.py
+Then update `app.py`:
+```python
+app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY")
+OPENCAGE_API_KEY = os.environ.get("OPENCAGE_API_KEY")
 ```
 
-### Running the Application
+---
+
+## Deployment
+
+The app includes a `runtime.txt` specifying Python 3.11.9 and uses **Gunicorn** as the production WSGI server, making it ready to deploy on platforms like Render or Railway.
 
 ```bash
-python app.py
+gunicorn app:app
 ```
 
-The app will be available at `http://localhost:5000`.
-
 ---
 
-## 🧠 How It Works
+## License
 
-1. **Data** — The app uses `india_ev_charging_stations.csv`, which contains station names, locations (latitude/longitude), charger types, and availability.
-2. **Model Training** — `train_model.py` processes the dataset and trains a KNN model using geographic coordinates to cluster stations.
-3. **Prediction** — When a user submits their location, `ml_model.py` queries the KNN model to return the *k* nearest charging stations.
-4. **Auth** — Users can register and log in via `database.py`, which manages a local SQLite database.
-5. **Web UI** — Flask serves HTML templates from the `templates/` folder for a seamless user experience.
-
----
-
-## 📊 Dataset
-
-The project uses `india_ev_charging_stations.csv`, a dataset of EV charging stations across India. It includes:
-
-| Column        | Description                     |
-|---------------|---------------------------------|
-| Station Name  | Name of the charging station    |
-| City / State  | Location details                |
-| Latitude      | Geographic latitude             |
-| Longitude     | Geographic longitude            |
-| Charger Type  | AC / DC / Fast Charger          |
-| Availability  | Operational status              |
-
-*You can expand the dataset by adding new entries or using `new_routes_to_add.py`.*
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome!
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/your-feature`
-3. Commit your changes: `git commit -m 'Add your feature'`
-4. Push to the branch: `git push origin feature/your-feature`
-5. Open a Pull Request
-
----
-
-## 📄 License
-
-This project is open source and available under the [MIT License](LICENSE).
-
----
-
-> Made with ⚡ by [RudraNarayan2005](https://github.com/RudraNarayan2005)
+This project is open source. Feel free to use and adapt it.
