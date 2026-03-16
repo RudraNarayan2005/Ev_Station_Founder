@@ -1,315 +1,604 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <title>EV Stations - {{ stations|length }} Found</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
-
 <style>
 
-*{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:Arial;background:#f8fafc;}
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
 
-.container{max-width:1200px;margin:auto;padding:20px;}
+:root {
+  --green: #00e5a0;
+  --green-dim: #00b37a;
+  --dark: #080e12;
+  --dark2: #0d1a22;
+  --card: rgba(255,255,255,0.04);
+  --border: rgba(255,255,255,0.08);
+  --text: #e8f0f5;
+  --muted: #7a9aac;
+}
 
-/* ── HEADER ── */
-.header{
-  background:linear-gradient(135deg,#1e293b,#334155);
-  color:white;
-  padding:30px;
-  border-radius:20px;
-  text-align:center;
-  margin-bottom:25px;
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--dark);
+  color: var(--text);
+  min-height: 100vh;
 }
-.header h1{font-size:2em;margin-bottom:4px;}
 
-/* ── STATS ── */
-.stats{
-  display:flex;
-  gap:15px;
-  justify-content:center;
-  flex-wrap:wrap;
-  margin-bottom:20px;
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0,229,160,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,229,160,0.025) 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none;
+  z-index: 0;
 }
-.stat{
-  background:white;
-  padding:15px 25px;
-  border-radius:16px;
-  box-shadow:0 4px 6px rgba(0,0,0,0.05);
-  text-align:center;
+
+/* ── NAV ── */
+nav {
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 40px;
+  background: rgba(8,14,18,0.9);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
 }
-.stat-val{font-size:1.8em;font-weight:bold;color:#10b981;}
-.stat-label{font-size:0.85em;color:#64748b;}
+
+.nav-brand {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 18px;
+  color: var(--green);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-brand .bolt {
+  width: 22px; height: 22px;
+  background: var(--green);
+  clip-path: polygon(60% 0%,20% 50%,50% 50%,40% 100%,80% 48%,52% 48%);
+  flex-shrink: 0;
+}
+
+.nav-right { display: flex; align-items: center; gap: 10px; }
+
+.nav-user {
+  font-size: 13px;
+  color: var(--muted);
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.nav-link {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  text-decoration: none;
+  padding: 7px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.nav-link:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+
+.nav-link.danger:hover { color: #f87171; border-color: rgba(248,113,113,0.3); }
+
+/* ── PAGE WRAPPER ── */
+.page { max-width: 1200px; margin: 0 auto; padding: 32px 24px 60px; position: relative; z-index: 1; }
+
+/* ── HERO STRIP ── */
+.hero-strip {
+  background: linear-gradient(135deg, rgba(0,229,160,0.07), rgba(0,115,80,0.04));
+  border: 1px solid rgba(0,229,160,0.12);
+  border-radius: 18px;
+  padding: 28px 32px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.hero-strip h1 {
+  font-family: 'Syne', sans-serif;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.hero-strip p { font-size: 14px; color: var(--muted); margin-top: 3px; font-weight: 300; }
+
+/* ── STATS ROW ── */
+.stats-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.stat-card {
+  flex: 1;
+  min-width: 110px;
+  background: rgba(13,26,34,0.8);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px 20px;
+  text-align: center;
+}
+
+.stat-val {
+  font-family: 'Syne', sans-serif;
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--green);
+}
+
+.stat-label { font-size: 12px; color: var(--muted); margin-top: 2px; }
 
 /* ── CLUSTER BANNER ── */
-.cluster-banner{
-  background:white;
-  padding:12px 18px;
-  border-radius:12px;
-  margin-bottom:16px;
-  box-shadow:0 4px 6px rgba(0,0,0,0.05);
-  display:flex;
-  align-items:center;
-  gap:10px;
-  font-size:0.9em;
-  color:#475569;
+.cluster-banner {
+  background: rgba(13,26,34,0.8);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 18px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--muted);
 }
-.cluster-dot{width:13px;height:13px;border-radius:50%;flex-shrink:0;}
-.cluster-banner a{color:#3b82f6;font-weight:600;text-decoration:none;}
+
+.cluster-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
+
+.cluster-banner a {
+  color: var(--green);
+  font-weight: 600;
+  text-decoration: none;
+  margin-left: 4px;
+}
+
+.cluster-banner a:hover { text-decoration: underline; }
 
 /* ── ROUTE BOX ── */
-.route-box{
-  background:white;
-  padding:20px;
-  border-radius:15px;
-  margin-bottom:20px;
-  box-shadow:0 4px 10px rgba(0,0,0,0.05);
-}
-.route-box h3{margin-bottom:14px;color:#1e293b;}
-
-.route-inputs{
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
-  align-items:center;
+.route-box {
+  background: rgba(13,26,34,0.8);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 22px 24px;
+  margin-bottom: 20px;
 }
 
-/* Google Maps-style input wrapper */
-.autocomplete-wrap{
-  position:relative;
-  flex:1;
-  min-width:200px;
-}
-.input-icon{
-  position:absolute;
-  left:12px;
-  top:50%;
-  transform:translateY(-50%);
-  font-size:0.85em;
-  pointer-events:none;
-  z-index:1;
-}
-.autocomplete-wrap input{
-  width:100%;
-  padding:11px 14px 11px 34px;
-  border-radius:10px;
-  border:1.5px solid #cbd5e1;
-  font-size:0.9em;
-  outline:none;
-  transition:border-color 0.2s, box-shadow 0.2s;
-  background:white;
-}
-.autocomplete-wrap input:focus{
-  border-color:#10b981;
-  box-shadow:0 0 0 3px rgba(16,185,129,0.12);
-}
-.autocomplete-wrap input.has-value{
-  border-color:#10b981;
+.route-box h3 {
+  font-family: 'Syne', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: var(--text);
 }
 
-/* Dropdown list */
-.autocomplete-list{
-  position:absolute;
-  background:white;
-  border:1px solid #e2e8f0;
-  width:100%;
-  max-height:240px;
-  overflow-y:auto;
-  border-radius:12px;
-  z-index:9999;
-  top:calc(100% + 6px);
-  left:0;
-  box-shadow:0 12px 30px rgba(0,0,0,0.13);
-  display:none;
-}
-.autocomplete-list.open{display:block;}
+.route-inputs { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 
-.autocomplete-item{
-  display:flex;
-  align-items:flex-start;
-  gap:10px;
-  padding:10px 14px;
-  cursor:pointer;
-  border-bottom:1px solid #f8fafc;
-  transition:background 0.15s;
-}
-.autocomplete-item:last-child{border-bottom:none;}
-.autocomplete-item:hover, .autocomplete-item.active{background:#f0fdf4;}
+/* Autocomplete */
+.autocomplete-wrap { position: relative; flex: 1; min-width: 200px; }
 
-.ac-pin{
-  color:#10b981;
-  font-size:0.95em;
-  margin-top:2px;
-  flex-shrink:0;
-}
-.ac-text{flex:1;}
-.ac-primary{font-size:0.88em;font-weight:600;color:#1e293b;line-height:1.3;}
-.ac-secondary{font-size:0.78em;color:#94a3b8;margin-top:1px;}
-
-/* Loading spinner inside input */
-.ac-loading{
-  position:absolute;
-  right:10px;
-  top:50%;
-  transform:translateY(-50%);
-  width:14px;
-  height:14px;
-  border:2px solid #e2e8f0;
-  border-top-color:#10b981;
-  border-radius:50%;
-  animation:spin 0.7s linear infinite;
-  display:none;
-}
-@keyframes spin{to{transform:translateY(-50%) rotate(360deg);}}
-
-.route-inputs select{
-  padding:10px 12px;
-  border-radius:10px;
-  border:1px solid #cbd5e1;
-  font-size:0.9em;
-  color:#475569;
-  outline:none;
+.input-icon {
+  position: absolute;
+  left: 12px; top: 50%;
+  transform: translateY(-50%);
+  font-size: 13px;
+  pointer-events: none;
+  z-index: 1;
 }
 
-.btn-route{
-  padding:10px 22px;
-  border:none;
-  background:#10b981;
-  color:white;
-  border-radius:10px;
-  cursor:pointer;
-  font-weight:600;
-  font-size:0.9em;
-  white-space:nowrap;
-}
-.btn-route:disabled{opacity:0.6;cursor:not-allowed;}
-.btn-clear{
-  padding:10px 16px;
-  border:1px solid #e2e8f0;
-  background:white;
-  color:#64748b;
-  border-radius:10px;
-  cursor:pointer;
-  font-size:0.9em;
+.autocomplete-wrap input {
+  width: 100%;
+  padding: 11px 14px 11px 34px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s;
 }
 
-.route-result{
-  display:none;
-  margin-top:12px;
-  padding:10px 16px;
-  background:#f0fdf4;
-  border:1px solid #bbf7d0;
-  border-radius:10px;
-  font-size:0.85em;
-  color:#166534;
+.autocomplete-wrap input::placeholder { color: rgba(122,154,172,0.4); }
+.autocomplete-wrap input:focus { border-color: rgba(0,229,160,0.4); background: rgba(0,229,160,0.03); }
+.autocomplete-wrap input.has-value { border-color: rgba(0,229,160,0.5); }
+
+.autocomplete-list {
+  position: absolute;
+  background: #0d1a22;
+  border: 1px solid var(--border);
+  width: 100%;
+  max-height: 240px;
+  overflow-y: auto;
+  border-radius: 12px;
+  z-index: 9999;
+  top: calc(100% + 6px);
+  left: 0;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.5);
+  display: none;
+}
+
+.autocomplete-list.open { display: block; }
+
+.autocomplete-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+
+.autocomplete-item:last-child { border-bottom: none; }
+.autocomplete-item:hover, .autocomplete-item.active { background: rgba(0,229,160,0.06); }
+
+.ac-pin { color: var(--green); font-size: 13px; margin-top: 2px; flex-shrink: 0; }
+.ac-text { flex: 1; }
+.ac-primary { font-size: 13px; font-weight: 500; color: var(--text); line-height: 1.3; }
+.ac-secondary { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+.ac-loading {
+  position: absolute;
+  right: 10px; top: 50%;
+  transform: translateY(-50%);
+  width: 14px; height: 14px;
+  border: 2px solid var(--border);
+  border-top-color: var(--green);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: none;
+}
+
+@keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
+
+.route-inputs select {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.04);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  outline: none;
+}
+
+.route-inputs select option { background: #0d1a22; }
+
+.btn-route {
+  padding: 10px 22px;
+  border: none;
+  background: var(--green);
+  color: var(--dark);
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  white-space: nowrap;
+  transition: background 0.2s, transform 0.15s;
+}
+
+.btn-route:hover { background: var(--green-dim); transform: translateY(-1px); }
+.btn-route:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+.btn-clear {
+  padding: 10px 16px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.btn-clear:hover { color: #f87171; border-color: rgba(248,113,113,0.3); }
+
+.route-result {
+  display: none;
+  margin-top: 12px;
+  padding: 10px 16px;
+  background: rgba(0,229,160,0.06);
+  border: 1px solid rgba(0,229,160,0.2);
+  border-radius: 10px;
+  font-size: 13px;
+  color: var(--green);
 }
 
 /* ── MAP ── */
-#map{height:450px;width:100%;border-radius:20px;margin:20px 0;}
-
-/* ── LEGEND ── */
-.map-legend{
-  background:white;
-  padding:12px 16px;
-  border-radius:12px;
-  margin:-10px 0 20px;
-  box-shadow:0 4px 6px rgba(0,0,0,0.05);
+#map {
+  height: 460px;
+  width: 100%;
+  border-radius: 18px;
+  margin: 20px 0 14px;
+  border: 1px solid var(--border);
 }
-.legend-title{font-size:0.75em;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:8px;}
-.legend-items{display:flex;flex-wrap:wrap;gap:12px;}
-.legend-item{display:flex;align-items:center;gap:6px;font-size:0.8em;color:#475569;}
-.legend-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;}
+
+/* ── MAP LEGEND ── */
+.map-legend {
+  background: rgba(13,26,34,0.8);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 28px;
+}
+
+.legend-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.legend-items { display: flex; flex-wrap: wrap; gap: 16px; }
+
+.legend-item { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--muted); }
+
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+/* ── SECTION HEADER ── */
+.section-header {
+  margin-bottom: 18px;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.section-header h2 {
+  font-family: 'Syne', sans-serif;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+}
+
+.section-header .count-badge {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--dark);
+  background: var(--green);
+  padding: 2px 10px;
+  border-radius: 20px;
+}
 
 /* ── STATIONS GRID ── */
-.stations-grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
-  gap:20px;
+.stations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
 }
 
-.station-card{
-  background:white;
-  padding:20px;
-  border-radius:18px;
-  box-shadow:0 4px 12px rgba(0,0,0,0.05);
-  border-left:5px solid #10b981;
-  transition:transform 0.2s,box-shadow 0.2s;
+.station-card {
+  background: rgba(13,26,34,0.85);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  border-left: 4px solid var(--green);
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+  position: relative;
+  overflow: hidden;
 }
 
-.station-card:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,0.08);}
-
-.ai-badge{
-  background:#10b981;
-  color:white;
-  font-size:12px;
-  padding:4px 10px;
-  border-radius:20px;
-  display:inline-block;
-  margin-bottom:6px;
-}
-.zone-tag{
-  display:inline-block;
-  font-size:0.72em;
-  padding:3px 10px;
-  border-radius:20px;
-  font-weight:600;
-  margin-bottom:8px;
-  color:white;
+.station-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, var(--green), transparent);
+  opacity: 0;
+  transition: opacity 0.2s;
 }
 
-.station-card h3{margin-bottom:4px;font-size:1em;color:#1e293b;}
-.station-card p{font-size:0.88em;color:#64748b;margin-top:3px;}
-
-.demand-tag{font-size:0.82em;margin-top:4px;}
-.demand-high{color:#ef4444;}
-.demand-med{color:#f59e0b;}
-.demand-low{color:#10b981;}
-
-.btn-nav{
-  display:inline-block;
-  width:100%;
-  text-align:center;
-  background:#3b82f6;
-  color:white;
-  padding:10px;
-  border-radius:10px;
-  text-decoration:none;
-  margin-top:10px;
-  font-weight:600;
-  font-size:0.9em;
+.station-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(0,229,160,0.3);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.3);
 }
-.btn-nav:hover{background:#2563eb;}
 
-.back-btn{display:inline-block;margin-top:25px;color:#64748b;text-decoration:none;font-weight:600;}
+.station-card:hover::before { opacity: 1; }
+
+.ai-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(0,229,160,0.12);
+  color: var(--green);
+  border: 1px solid rgba(0,229,160,0.25);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 8px;
+  letter-spacing: 0.03em;
+}
+
+.zone-tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  color: white;
+  letter-spacing: 0.03em;
+}
+
+.station-card h3 {
+  font-family: 'Syne', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  color: var(--text);
+  line-height: 1.3;
+}
+
+.station-card .address {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 300;
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+
+.meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.demand-chip {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+
+.demand-high { background: rgba(248,113,113,0.12); color: #f87171; }
+.demand-med  { background: rgba(251,191,36,0.12);  color: #fbbf24; }
+.demand-low  { background: rgba(0,229,160,0.1);    color: var(--green); }
+
+.dist-badge {
+  font-size: 12px;
+  font-weight: 600;
+  color: #60a5fa;
+}
+
+.btn-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  padding: 10px;
+  background: rgba(59,130,246,0.12);
+  color: #60a5fa;
+  border: 1px solid rgba(59,130,246,0.25);
+  border-radius: 10px;
+  text-decoration: none;
+  font-family: 'Syne', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  margin-top: 14px;
+  transition: background 0.2s, border-color 0.2s, transform 0.15s;
+}
+
+.btn-nav:hover {
+  background: rgba(59,130,246,0.2);
+  border-color: rgba(59,130,246,0.4);
+  transform: translateY(-1px);
+}
+
+/* ── EMPTY STATE ── */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  grid-column: 1/-1;
+}
+
+.empty-state .emoji { font-size: 48px; margin-bottom: 16px; }
+.empty-state h3 { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; margin-bottom: 8px; }
+.empty-state p { font-size: 14px; color: var(--muted); }
+
+/* ── BACK ── */
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 32px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 9px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.back-link:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 600px) {
+  nav { padding: 13px 18px; }
+  .page { padding: 20px 16px 48px; }
+  .hero-strip { padding: 20px; }
+  .route-box { padding: 18px; }
+  .stats-row { gap: 8px; }
+}
 
 </style>
 </head>
 
 <body>
-<div class="container">
 
-  <!-- HEADER -->
-  <div class="header">
-    <h1>⚡ Reachable EV Stations</h1>
-    <p>Smart EV Range & Route Planner</p>
+<!-- NAV -->
+<nav>
+  <a href="/" class="nav-brand">
+    <div class="bolt"></div>
+    EV Charge Finder
+  </a>
+  <div class="nav-right">
+    <span class="nav-user">👤 {{ username }}</span>
+    <a href="/dashboard" class="nav-link">Dashboard</a>
+    <a href="/cluster-map" class="nav-link">Cluster Map</a>
+    <a href="/logout" class="nav-link danger">Logout</a>
+  </div>
+</nav>
+
+<div class="page">
+
+  <!-- HERO STRIP -->
+  <div class="hero-strip">
+    <div>
+      <h1>⚡ Reachable EV Stations</h1>
+      <p>Smart range &amp; route planner powered by KNN clustering</p>
+    </div>
+    <a href="/dashboard" class="back-link" style="margin-top:0;">← Change Location</a>
   </div>
 
   <!-- STATS -->
-  <div class="stats">
-    <div class="stat">
+  <div class="stats-row">
+    <div class="stat-card">
       <div class="stat-val">{{ battery }}%</div>
       <div class="stat-label">Battery</div>
     </div>
-    <div class="stat">
+    <div class="stat-card">
       <div class="stat-val">{{ max_range }} km</div>
       <div class="stat-label">Safe Range</div>
     </div>
-    <div class="stat">
+    <div class="stat-card">
       <div class="stat-val">{{ stations|length }}</div>
       <div class="stat-label">Stations Found</div>
     </div>
+    {% if stations %}
+    <div class="stat-card">
+      <div class="stat-val">{{ stations[0].distance }} km</div>
+      <div class="stat-label">Nearest</div>
+    </div>
+    {% endif %}
   </div>
 
   <!-- CLUSTER BANNER -->
@@ -318,9 +607,9 @@ body{font-family:Arial;background:#f8fafc;}
     <div class="cluster-dot"
          style="background:{{ user_cluster.color }};box-shadow:0 0 6px {{ user_cluster.color }};"></div>
     <div>
-      You are in <b>Cluster Zone #{{ user_cluster.cluster_id }}</b> &nbsp;·&nbsp;
-      <b>{{ user_cluster.dominant_state }}</b> &nbsp;·&nbsp;
-      {{ user_cluster.station_count }} stations in this zone
+      You are in <b style="color:var(--text);">Cluster Zone #{{ user_cluster.cluster_id }}</b>
+      &nbsp;·&nbsp; <b style="color:var(--text);">{{ user_cluster.dominant_state }}</b>
+      &nbsp;·&nbsp; {{ user_cluster.station_count }} stations in this zone
       &nbsp;|&nbsp;
       <a href="/cluster-map">View Full Cluster Map →</a>
     </div>
@@ -329,19 +618,19 @@ body{font-family:Arial;background:#f8fafc;}
 
   <!-- ROUTE BOX -->
   <div class="route-box">
-    <h3>🗺️ Plan Route & Find Stations Along the Way</h3>
+    <h3>🗺️ Plan Route &amp; Find Stations Along the Way</h3>
     <div class="route-inputs">
 
       <div class="autocomplete-wrap">
-        <span class="input-icon" style="color:#ef4444;">📍</span>
-        <input id="source" type="text" placeholder="Enter Source" autocomplete="off">
+        <span class="input-icon">📍</span>
+        <input id="source" type="text" placeholder="Enter source" autocomplete="off">
         <div class="ac-loading" id="source-loading"></div>
         <div id="source-list" class="autocomplete-list"></div>
       </div>
 
       <div class="autocomplete-wrap">
-        <span class="input-icon" style="color:#3b82f6;">🏁</span>
-        <input id="destination" type="text" placeholder="Enter Destination" autocomplete="off">
+        <span class="input-icon">🏁</span>
+        <input id="destination" type="text" placeholder="Enter destination" autocomplete="off">
         <div class="ac-loading" id="destination-loading"></div>
         <div id="destination-list" class="autocomplete-list"></div>
       </div>
@@ -353,9 +642,8 @@ body{font-family:Arial;background:#f8fafc;}
         <option value="50">Within 50 km</option>
       </select>
 
-      <button class="btn-route" id="findBtn" onclick="getRoute()">🔍 Find Route</button>
+      <button class="btn-route" id="findBtn" onclick="getRoute()">Find Route →</button>
       <button class="btn-clear" onclick="clearRoute()">✕ Clear</button>
-
     </div>
     <div class="route-result" id="routeResult"></div>
   </div>
@@ -365,118 +653,129 @@ body{font-family:Arial;background:#f8fafc;}
 
   <!-- LEGEND -->
   <div class="map-legend">
-    <div class="legend-title">🎨 Map Legend</div>
+    <div class="legend-title">Map Legend</div>
     <div class="legend-items">
       <div class="legend-item">
-        <div class="legend-dot" style="background:#10b981;"></div>
-        Nearby — Low Demand ✅
+        <div class="legend-dot" style="background:#00e5a0;"></div> Low Demand ✅
       </div>
       <div class="legend-item">
-        <div class="legend-dot" style="background:#f59e0b;"></div>
-        Nearby — Medium Demand ⚡
+        <div class="legend-dot" style="background:#fbbf24;"></div> Medium Demand ⚡
       </div>
       <div class="legend-item">
-        <div class="legend-dot" style="background:#ef4444;"></div>
-        Nearby — High Demand 🔥
+        <div class="legend-dot" style="background:#f87171;"></div> High Demand 🔥
       </div>
       <div class="legend-item">
-        <div class="legend-dot" style="background:#888;opacity:0.5;"></div>
-        Outside Range (by cluster zone)
+        <div class="legend-dot" style="background:#7a9aac;opacity:0.5;"></div> Outside Range
       </div>
     </div>
   </div>
 
   <!-- STATIONS GRID -->
-  <div class="stations-grid">
-   {% for s in stations %}
-    <div class="station-card"
-     style="border-left-color:{{ s.cluster_color if s.cluster_color != '#888888' else '#10b981' }};">
-
-    {% if loop.index <= 3 %}
-      <div class="ai-badge">🏆 AI Recommended</div>
-    {% endif %}
-
-      {% if s.cluster_id != -1 %}
-      <div class="zone-tag" style="background:{{ s.cluster_color }};">
-        Zone #{{ s.cluster_id }}
-      </div>
-      {% endif %}
-
-      <h3>{{ s.name }}</h3>
-      <p>{{ s.address }}</p>
-      <p style="margin-top:4px;">🤖 AI Demand: <b>{{ s.demand_score }}</b></p>
-
-      {% if s.demand_score > 120 %}
-      <p class="demand-tag demand-high">🔥 High Demand Area</p>
-      {% elif s.demand_score > 70 %}
-      <p class="demand-tag demand-med">⚡ Medium Demand</p>
-      {% else %}
-      <p class="demand-tag demand-low">✅ Low Demand</p>
-      {% endif %}
-
-      <p style="margin-top:4px;color:#3b82f6;font-weight:600;font-size:0.9em;">
-        📍 {{ s.distance }} km away
-      </p>
-
-      <a href="https://www.google.com/maps/dir/?api=1&destination={{ s.lat }},{{ s.lon }}"
-         target="_blank" class="btn-nav">
-        <i class="fas fa-location-arrow"></i> Navigate Now
-      </a>
-    </div>
-    {% endfor %}
+  <div class="section-header">
+    <h2>Nearby Stations</h2>
+    <span class="count-badge">{{ stations|length }} found</span>
   </div>
 
-  <a href="/" class="back-btn">
-    <i class="fas fa-arrow-left"></i> Change Location or Battery
-  </a>
+  <div class="stations-grid">
+    {% if stations %}
+      {% for s in stations %}
+      <div class="station-card"
+           style="border-left-color:{{ s.cluster_color if s.cluster_color != '#888888' else 'var(--green)' }};">
 
-</div><!-- /container -->
+        {% if loop.index <= 3 %}
+        <div class="ai-badge">🏆 AI Recommended</div>
+        {% endif %}
+
+        {% if s.cluster_id != -1 %}
+        <div class="zone-tag" style="background:{{ s.cluster_color }};">Zone #{{ s.cluster_id }}</div>
+        {% endif %}
+
+        <h3>{{ s.name }}</h3>
+        <p class="address">{{ s.address }}{% if s.city and s.city != 'N/A' %}, {{ s.city }}{% endif %}{% if s.state and s.state != 'N/A' %}, {{ s.state }}{% endif %}</p>
+
+        <div class="meta-row">
+          <span class="dist-badge">📍 {{ s.distance }} km away</span>
+          {% if s.demand_score > 120 %}
+          <span class="demand-chip demand-high">🔥 High Demand</span>
+          {% elif s.demand_score > 70 %}
+          <span class="demand-chip demand-med">⚡ Medium Demand</span>
+          {% else %}
+          <span class="demand-chip demand-low">✅ Low Demand</span>
+          {% endif %}
+        </div>
+
+        <p style="font-size:12px;color:var(--muted);">AI Demand Score: <b style="color:var(--text);">{{ s.demand_score }}</b></p>
+
+        <a href="https://www.google.com/maps/dir/?api=1&destination={{ s.lat }},{{ s.lon }}"
+           target="_blank" class="btn-nav">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+          Navigate Now
+        </a>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state">
+        <div class="emoji">🔋</div>
+        <h3>No stations in range</h3>
+        <p>Try increasing your battery level or check back when you have more charge.</p>
+      </div>
+    {% endif %}
+  </div>
+
+  <a href="/dashboard" class="back-link">← Change Location or Battery</a>
+
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
-
 <script>
 
-// ── Data from Flask ───────────────────────────────────────────────────────────
 const ALL_STATIONS = {{ all_stations_json | safe }};
-
-// ── Route state ───────────────────────────────────────────────────────────────
-let routeLayer  = null;
+let routeLayer = null;
 let routeMarkers = [];
+const previewPins = {};
 
-// ── Map init ──────────────────────────────────────────────────────────────────
-const map = L.map('map').setView([{{ u_lat }}, {{ u_lon }}], 11);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19 }).addTo(map);
+// ── MAP ───────────────────────────────────────────────────────────────────────
+const map = L.map('map', { zoomControl: true }).setView([{{ u_lat }}, {{ u_lon }}], 11);
 
-L.marker([{{ u_lat }}, {{ u_lon }}]).addTo(map)
-  .bindPopup('<b>Your Vehicle</b>').openPopup();
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  maxZoom: 19,
+  attribution: '&copy; OpenStreetMap &copy; CARTO'
+}).addTo(map);
+
+// User pin
+const userIcon = L.divIcon({
+  html: `<div style="width:16px;height:16px;background:#00e5a0;border:3px solid #fff;border-radius:50%;box-shadow:0 0 12px #00e5a0;"></div>`,
+  iconSize: [16, 16], iconAnchor: [8, 8], className: ''
+});
+L.marker([{{ u_lat }}, {{ u_lon }}], { icon: userIcon }).addTo(map)
+  .bindPopup('<b style="color:#00e5a0">Your Vehicle</b>').openPopup();
 
 L.circle([{{ u_lat }}, {{ u_lon }}], {
   radius: {{ max_range }} * 1000,
-  color:'#10b981', fillColor:'#10b981', fillOpacity:0.12, weight:2
+  color: '#00e5a0', fillColor: '#00e5a0', fillOpacity: 0.06, weight: 1.5, dashArray: '6,4'
 }).addTo(map);
 
-// Outside-range stations (small dots, cluster colour)
+// Outside-range dots
 const nearbySet = new Set();
 {% for s in stations %}nearbySet.add("{{ s.lat }}_{{ s.lon }}");{% endfor %}
 
 ALL_STATIONS.forEach(s => {
   if (nearbySet.has(s.lat + "_" + s.lon)) return;
   L.circleMarker([s.lat, s.lon], {
-    radius:4, fillColor:s.cluster_color,
-    color:s.cluster_color, weight:0, fillOpacity:0.5
+    radius: 4, fillColor: s.cluster_color,
+    color: s.cluster_color, weight: 0, fillOpacity: 0.45
   }).addTo(map).bindPopup(
     `<b>${s.name}</b><br>${s.city}, ${s.state}<br>` +
-    `<span style="background:${s.cluster_color};color:#fff;padding:2px 8px;` +
-    `border-radius:10px;font-size:0.8em">Zone #${s.cluster_id}</span>` +
-    `<br><small style="color:#888">Outside your range</small>`
+    `<span style="background:${s.cluster_color};color:#fff;padding:2px 8px;border-radius:10px;font-size:0.8em">Zone #${s.cluster_id}</span>` +
+    `<br><small style="color:#aaa">Outside your range</small>`
   );
 });
 
-// Nearby stations (large, demand colour)
+// Demand colour helper
 function getDemandColor(score) {
-  if (score > 120) return "#ef4444";
-  if (score > 70)  return "#f59e0b";
-  return "#10b981";
+  if (score > 120) return "#f87171";
+  if (score > 70)  return "#fbbf24";
+  return "#00e5a0";
 }
 function getDemandLabel(score) {
   if (score > 120) return "🔥 High Demand";
@@ -484,13 +783,14 @@ function getDemandLabel(score) {
   return "✅ Low Demand";
 }
 
+// Nearby stations
 {% for s in stations %}
 L.circleMarker([{{ s.lat }}, {{ s.lon }}], {
-  radius:10, fillColor:getDemandColor({{ s.demand_score }}),
-  color:"#fff", weight:2, fillOpacity:1
+  radius: 10, fillColor: getDemandColor({{ s.demand_score }}),
+  color: "#080e12", weight: 2.5, fillOpacity: 1
 }).addTo(map).bindPopup(
   "<b>{{ s.name }}</b><br>{{ s.city }}, {{ s.state }}<br>" +
-  "<b>{{ s.distance }} km</b> away<br>" +
+  "<b style='color:#60a5fa'>{{ s.distance }} km</b> away<br>" +
   getDemandLabel({{ s.demand_score }}) + "<br>" +
   "{% if s.cluster_id != -1 %}" +
   "<span style='background:{{ s.cluster_color }};color:#fff;padding:2px 8px;" +
@@ -504,35 +804,18 @@ map.fitBounds(
   L.circle([{{ u_lat }}, {{ u_lon }}], { radius: {{ max_range }}*1000 }).getBounds()
 );
 
-// ── LOCATION PREVIEW PINS ─────────────────────────────────────────────────────
-// Draggable pins shown when user picks a suggestion so they can verify/adjust
-const previewPins = {};
-
+// ── PREVIEW PINS ──────────────────────────────────────────────────────────────
 function showPreviewPin(inputId, lat, lon, label) {
-  if (previewPins[inputId]) {
-    map.removeLayer(previewPins[inputId]);
-    delete previewPins[inputId];
-  }
-  const icon = inputId === 'source' ? '📍 Source' : '🏁 Destination';
+  if (previewPins[inputId]) { map.removeLayer(previewPins[inputId]); delete previewPins[inputId]; }
+  const pinLabel = inputId === 'source' ? '📍 Source' : '🏁 Destination';
   const marker = L.marker([lat, lon], { draggable: true, title: label }).addTo(map);
-  marker.bindPopup(
-    `<b>${icon}</b><br>${label}<br>` +
-    `<small style="color:#64748b">Drag to adjust if wrong</small>`
-  ).openPopup();
-
+  marker.bindPopup(`<b>${pinLabel}</b><br>${label}<br><small style="color:#aaa">Drag to adjust</small>`).openPopup();
   marker.on('dragend', function() {
     const pos = marker.getLatLng();
     const el  = document.getElementById(inputId);
-    if (el) {
-      el.dataset.lat = pos.lat;
-      el.dataset.lon = pos.lng;
-    }
-    marker.bindPopup(
-      `<b>${icon}</b><br>Custom position<br>` +
-      `<small style="color:#10b981">Position adjusted ✓</small>`
-    ).openPopup();
+    if (el) { el.dataset.lat = pos.lat; el.dataset.lon = pos.lng; }
+    marker.bindPopup(`<b>${pinLabel}</b><br><small style="color:#00e5a0">Position adjusted ✓</small>`).openPopup();
   });
-
   previewPins[inputId] = marker;
   map.setView([lat, lon], Math.max(map.getZoom(), 13));
 }
@@ -548,7 +831,7 @@ function boldMatch(text, q) {
   const idx = text.toLowerCase().indexOf(q.toLowerCase());
   if (idx === -1) return text;
   return text.slice(0, idx)
-       + '<b style="color:#111;font-weight:700">' + text.slice(idx, idx + q.length) + '</b>'
+       + '<b style="color:#e8f0f5;font-weight:700">' + text.slice(idx, idx + q.length) + '</b>'
        + text.slice(idx + q.length);
 }
 
@@ -558,15 +841,8 @@ function setupAutocomplete(inputId, listId) {
   const loader = document.getElementById(inputId + '-loading');
   let timer, lastResults = [], activeIdx = -1;
 
-  function setLoader(on) {
-    if (loader) loader.style.display = on ? 'block' : 'none';
-  }
-
-  function closeList() {
-    list.innerHTML = '';
-    list.classList.remove('open');
-    activeIdx = -1;
-  }
+  function setLoader(on) { if (loader) loader.style.display = on ? 'block' : 'none'; }
+  function closeList() { list.innerHTML = ''; list.classList.remove('open'); activeIdx = -1; }
 
   function selectItem(idx) {
     const place = lastResults[idx];
@@ -576,24 +852,20 @@ function setupAutocomplete(inputId, listId) {
     input.dataset.lon = place.lon;
     input.classList.add('has-value');
     closeList();
-    // FIX: show draggable preview pin so user can verify the selected location
     showPreviewPin(inputId, place.lat, place.lon, place.display_name);
   }
 
   function renderList(results, query) {
-    lastResults = results;
-    activeIdx   = -1;
+    lastResults = results; activeIdx = -1;
     list.innerHTML = '';
     if (!results.length) { list.classList.remove('open'); return; }
-
     results.forEach((place, i) => {
       const primary   = place.display_name || '';
-      const secondary = (place.full_address && place.full_address !== primary)
-                        ? place.full_address : '';
+      const secondary = (place.full_address && place.full_address !== primary) ? place.full_address : '';
       const el = document.createElement('div');
       el.className = 'autocomplete-item';
       el.innerHTML =
-        `<div class="ac-pin"><i class="fas fa-map-marker-alt"></i></div>` +
+        `<div class="ac-pin">📍</div>` +
         `<div class="ac-text">` +
           `<div class="ac-primary">${boldMatch(primary, query)}</div>` +
           (secondary ? `<div class="ac-secondary">${secondary}</div>` : '') +
@@ -607,49 +879,27 @@ function setupAutocomplete(inputId, listId) {
   input.addEventListener('input', function() {
     clearTimeout(timer);
     const q = this.value.trim();
-    delete input.dataset.lat;
-    delete input.dataset.lon;
+    delete input.dataset.lat; delete input.dataset.lon;
     input.classList.remove('has-value');
-
     if (q.length < 2) { closeList(); return; }
-
     setLoader(true);
     timer = setTimeout(async () => {
       try {
-        // FIX: always pass proximity bias so results are locally relevant
-        const res = await fetch(
-          '/autocomplete?q=' + encodeURIComponent(q) +
-          '&lat={{ u_lat }}&lon={{ u_lon }}'
-        );
+        const res = await fetch('/autocomplete?q=' + encodeURIComponent(q) + '&lat={{ u_lat }}&lon={{ u_lon }}');
         if (!res.ok) throw new Error('HTTP ' + res.status);
-        const data = await res.json();
-        renderList(data, q);
-      } catch(err) {
-        console.error('Autocomplete failed:', err);
-        closeList();
-      } finally {
-        setLoader(false);
-      }
+        renderList(await res.json(), q);
+      } catch(err) { console.error('Autocomplete:', err); closeList(); }
+      finally { setLoader(false); }
     }, 300);
   });
 
   input.addEventListener('keydown', function(e) {
     const items = list.querySelectorAll('.autocomplete-item');
     if (!items.length) return;
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      activeIdx = (activeIdx + 1) % items.length;
-      items.forEach((el, i) => el.classList.toggle('active', i === activeIdx));
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      activeIdx = (activeIdx - 1 + items.length) % items.length;
-      items.forEach((el, i) => el.classList.toggle('active', i === activeIdx));
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      if (activeIdx >= 0) selectItem(activeIdx);
-    } else if (e.key === 'Escape') {
-      closeList();
-    }
+    if (e.key === 'ArrowDown') { e.preventDefault(); activeIdx = (activeIdx + 1) % items.length; items.forEach((el,i) => el.classList.toggle('active', i === activeIdx)); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); activeIdx = (activeIdx - 1 + items.length) % items.length; items.forEach((el,i) => el.classList.toggle('active', i === activeIdx)); }
+    else if (e.key === 'Enter') { e.preventDefault(); if (activeIdx >= 0) selectItem(activeIdx); }
+    else if (e.key === 'Escape') closeList();
   });
 
   document.addEventListener('click', e => {
@@ -657,52 +907,38 @@ function setupAutocomplete(inputId, listId) {
   });
 }
 
-setupAutocomplete('source',      'source-list');
+setupAutocomplete('source', 'source-list');
 setupAutocomplete('destination', 'destination-list');
 
 // ── GEOCODING ─────────────────────────────────────────────────────────────────
 async function getCoordinates(inputEl) {
-  if (inputEl.dataset.lat && inputEl.dataset.lon) {
+  if (inputEl.dataset.lat && inputEl.dataset.lon)
     return [parseFloat(inputEl.dataset.lat), parseFloat(inputEl.dataset.lon)];
-  }
   const query = inputEl.value.trim();
   if (!query) return null;
   try {
     const res  = await fetch(`/autocomplete?q=${encodeURIComponent(query)}&lat={{ u_lat }}&lon={{ u_lon }}`);
     const data = await res.json();
-    if (data.length === 0) {
-      alert(`Location not found: "${query}"\nTry selecting from the dropdown suggestions.`);
-      return null;
-    }
+    if (!data.length) { alert(`Location not found: "${query}"\nPlease select from the dropdown.`); return null; }
     inputEl.dataset.lat = data[0].lat;
     inputEl.dataset.lon = data[0].lon;
     return [data[0].lat, data[0].lon];
-  } catch(e) {
-    alert("Could not find location. Please try again.");
-    return null;
-  }
+  } catch { alert("Could not find location. Please try again."); return null; }
 }
 
 // ── HAVERSINE ─────────────────────────────────────────────────────────────────
 function haversine(lat1, lon1, lat2, lon2) {
-  const R = 6371;
-  const dLat = (lat2-lat1) * Math.PI / 180;
-  const dLon = (lon2-lon1) * Math.PI / 180;
-  const a = Math.sin(dLat/2)**2 +
-            Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2)**2;
+  const R = 6371, dLat = (lat2-lat1)*Math.PI/180, dLon = (lon2-lon1)*Math.PI/180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
-// Min distance from a point to a polyline segment
 function distPointToRoute(lat, lon, routeCoords) {
   let minDist = Infinity;
-  for (let i = 0; i < routeCoords.length - 1; i++) {
-    const [lon1, lat1] = routeCoords[i];
-    const [lon2, lat2] = routeCoords[i+1];
+  for (let i = 0; i < routeCoords.length-1; i++) {
+    const [lon1,lat1] = routeCoords[i], [lon2,lat2] = routeCoords[i+1];
     const dx = lon2-lon1, dy = lat2-lat1;
-    const t  = Math.max(0, Math.min(1,
-      ((lon-lon1)*dx + (lat-lat1)*dy) / (dx*dx + dy*dy + 1e-10)
-    ));
+    const t = Math.max(0, Math.min(1, ((lon-lon1)*dx+(lat-lat1)*dy)/(dx*dx+dy*dy+1e-10)));
     const d = haversine(lat, lon, lat1+t*dy, lon1+t*dx);
     if (d < minDist) minDist = d;
   }
@@ -712,170 +948,127 @@ function distPointToRoute(lat, lon, routeCoords) {
 // ── CLEAR ROUTE ───────────────────────────────────────────────────────────────
 function clearRoute() {
   if (routeLayer) { map.removeLayer(routeLayer); routeLayer = null; }
-  routeMarkers.forEach(m => map.removeLayer(m));
-  routeMarkers = [];
-  // FIX: also remove preview pins when clearing
+  routeMarkers.forEach(m => map.removeLayer(m)); routeMarkers = [];
   clearPreviewPins();
   document.getElementById('routeResult').style.display = 'none';
   ['source','destination'].forEach(id => {
     const el = document.getElementById(id);
-    el.value = '';
-    el.classList.remove('has-value');
-    delete el.dataset.lat;
-    delete el.dataset.lon;
-    document.getElementById(id + '-list').classList.remove('open');
+    el.value = ''; el.classList.remove('has-value');
+    delete el.dataset.lat; delete el.dataset.lon;
+    document.getElementById(id+'-list').classList.remove('open');
   });
 }
 
 // ── GET ROUTE ─────────────────────────────────────────────────────────────────
 async function getRoute() {
-  const srcEl   = document.getElementById("source");
-  const dstEl   = document.getElementById("destination");
-  const corKm   = parseFloat(document.getElementById("corridorKm").value);
-  const box     = document.getElementById('routeResult');
-  const findBtn = document.getElementById('findBtn');
+  const srcEl = document.getElementById('source');
+  const dstEl = document.getElementById('destination');
+  const corKm = parseFloat(document.getElementById('corridorKm').value);
+  const box   = document.getElementById('routeResult');
+  const btn   = document.getElementById('findBtn');
 
-  if (!srcEl.value.trim() || !dstEl.value.trim()) {
-    alert("Please enter both source and destination");
-    return;
-  }
+  if (!srcEl.value.trim() || !dstEl.value.trim()) { alert("Please enter both source and destination"); return; }
 
-  findBtn.textContent = "⏳ Finding...";
-  findBtn.disabled = true;
+  btn.textContent = '⏳ Finding...'; btn.disabled = true;
   box.style.display = 'block';
-  box.style.background = '#fefce8';
-  box.style.borderColor = '#fde68a';
-  box.style.color = '#92400e';
-  box.innerHTML = "🔍 Locating places...";
+  box.style.background = 'rgba(251,191,36,0.08)';
+  box.style.borderColor = 'rgba(251,191,36,0.3)';
+  box.style.color = '#fbbf24';
+  box.innerHTML = '🔍 Locating places...';
 
   try {
     const src = await getCoordinates(srcEl);
     const dst = await getCoordinates(dstEl);
-    if (!src || !dst) { findBtn.textContent = "🔍 Find Route"; findBtn.disabled = false; return; }
+    if (!src || !dst) { btn.textContent = 'Find Route →'; btn.disabled = false; return; }
 
-    box.innerHTML = "🗺️ Fetching route...";
+    box.innerHTML = '🗺️ Fetching route...';
 
     let routeCoords, totalKm, totalMins = null;
-    let fetched = false;
 
     async function tryOSRM(profile) {
       const ctrl = new AbortController();
       const tid  = setTimeout(() => ctrl.abort(), 7000);
       try {
         const r = await fetch(
-          // FIX: use 'driving' profile — 'foot' is wrong for EV/car routing
           `https://router.project-osrm.org/route/v1/${profile}/${src[1]},${src[0]};${dst[1]},${dst[0]}?overview=full&geometries=geojson`,
           { signal: ctrl.signal }
         );
         clearTimeout(tid);
         const d = await r.json();
-        if (d.code === 'Ok' && d.routes && d.routes.length > 0) return d.routes[0];
-      } catch(e) { clearTimeout(tid); }
+        if (d.code === 'Ok' && d.routes?.length) return d.routes[0];
+      } catch { clearTimeout(tid); }
       return null;
     }
 
-    try {
-      // FIX: 'driving' profile for correct road-based EV routing
-      const route = await tryOSRM('driving');
-      if (route) {
-        routeCoords = route.geometry.coordinates;
-        totalKm     = (route.distance / 1000).toFixed(1);
-        totalMins   = Math.round(route.duration / 60);
-        fetched     = true;
-      }
-    } catch(e) { console.warn('OSRM driving failed:', e); }
-
-    // Straight-line fallback
-    if (!fetched) {
-      console.warn('OSRM failed — using straight line fallback');
-      const steps = 50;
-      routeCoords = [];
+    const route = await tryOSRM('driving');
+    if (route) {
+      routeCoords = route.geometry.coordinates;
+      totalKm     = (route.distance / 1000).toFixed(1);
+      totalMins   = Math.round(route.duration / 60);
+    } else {
+      const steps = 50; routeCoords = [];
       for (let i = 0; i <= steps; i++) {
-        const t = i / steps;
-        routeCoords.push([src[1] + t*(dst[1]-src[1]), src[0] + t*(dst[0]-src[0])]);
+        const t = i/steps;
+        routeCoords.push([src[1]+t*(dst[1]-src[1]), src[0]+t*(dst[0]-src[0])]);
       }
-      totalKm   = haversine(src[0], src[1], dst[0], dst[1]).toFixed(1);
-      totalMins = null;
+      totalKm = haversine(src[0],src[1],dst[0],dst[1]).toFixed(1);
     }
 
-    // Clear old layers
     if (routeLayer) map.removeLayer(routeLayer);
-    routeMarkers.forEach(m => map.removeLayer(m));
-    routeMarkers = [];
+    routeMarkers.forEach(m => map.removeLayer(m)); routeMarkers = [];
 
-    // Draw route line
     routeLayer = L.geoJSON(
-      { type:"Feature", geometry:{ type:"LineString", coordinates:routeCoords } },
-      { style:{ color:"#3b82f6", weight:5, opacity:0.9 } }
+      { type:'Feature', geometry:{ type:'LineString', coordinates:routeCoords } },
+      { style:{ color:'#60a5fa', weight:5, opacity:0.9 } }
     ).addTo(map);
 
-    // Source marker (green)
-    const srcMarker = L.circleMarker([src[0], src[1]], {
-      radius:9, fillColor:"#10b981", color:"#fff", weight:2.5, fillOpacity:1, zIndexOffset:1000
-    }).addTo(map).bindPopup(`<b>📍 ${srcEl.value.split(',')[0]}</b><br>Start`);
-    routeMarkers.push(srcMarker);
+    const srcM = L.circleMarker([src[0],src[1]], { radius:9, fillColor:'#00e5a0', color:'#080e12', weight:2.5, fillOpacity:1, zIndexOffset:1000 }).addTo(map).bindPopup(`<b>📍 ${srcEl.value.split(',')[0]}</b><br>Start`);
+    const dstM = L.circleMarker([dst[0],dst[1]], { radius:9, fillColor:'#f87171', color:'#080e12', weight:2.5, fillOpacity:1, zIndexOffset:1000 }).addTo(map).bindPopup(`<b>🏁 ${dstEl.value.split(',')[0]}</b><br>Destination`);
+    routeMarkers.push(srcM, dstM);
 
-    // Destination marker (red)
-    const dstMarker = L.circleMarker([dst[0], dst[1]], {
-      radius:9, fillColor:"#ef4444", color:"#fff", weight:2.5, fillOpacity:1, zIndexOffset:1000
-    }).addTo(map).bindPopup(`<b>🏁 ${dstEl.value.split(',')[0]}</b><br>Destination`);
-    routeMarkers.push(dstMarker);
+    box.innerHTML = '📍 Finding stations along route...';
 
-    box.innerHTML = "📍 Finding stations along route...";
-
-    // Stations within corridor
     const along = [];
     ALL_STATIONS.forEach(s => {
       const d = distPointToRoute(s.lat, s.lon, routeCoords);
       if (d <= corKm) along.push({ ...s, distToRoute: d.toFixed(1) });
     });
-
-    along.sort((a, b) =>
-      haversine(src[0], src[1], a.lat, a.lon) -
-      haversine(src[0], src[1], b.lat, b.lon)
-    );
+    along.sort((a,b) => haversine(src[0],src[1],a.lat,a.lon) - haversine(src[0],src[1],b.lat,b.lon));
 
     along.forEach(s => {
-      const m = L.circleMarker([s.lat, s.lon], {
-        radius:10, fillColor:s.cluster_color,
-        color:"#fff", weight:2.5, fillOpacity:1, zIndexOffset:500
+      const m = L.circleMarker([s.lat,s.lon], {
+        radius:10, fillColor:s.cluster_color, color:'#080e12', weight:2.5, fillOpacity:1, zIndexOffset:500
       }).addTo(map).bindPopup(
         `<b>${s.name}</b><br>${s.city}, ${s.state}<br>` +
-        `<span style="color:#10b981;font-weight:600">⚡ ${s.distToRoute} km from route</span><br>` +
-        `<span style="background:${s.cluster_color};color:#fff;padding:2px 8px;` +
-        `border-radius:10px;font-size:0.8em;display:inline-block;margin-top:4px">` +
-        `Zone #${s.cluster_id}</span>`
+        `<span style="color:#00e5a0;font-weight:600">⚡ ${s.distToRoute} km from route</span><br>` +
+        `<span style="background:${s.cluster_color};color:#fff;padding:2px 8px;border-radius:10px;font-size:0.8em;display:inline-block;margin-top:4px">Zone #${s.cluster_id}</span>`
       );
       routeMarkers.push(m);
     });
 
-    box.style.background = '#f0fdf4';
-    box.style.borderColor = '#bbf7d0';
-    box.style.color = '#166534';
-    const srcName = srcEl.value.split(',')[0].trim();
-    const dstName = dstEl.value.split(',')[0].trim();
+    box.style.background = 'rgba(0,229,160,0.06)';
+    box.style.borderColor = 'rgba(0,229,160,0.2)';
+    box.style.color = '#00e5a0';
     box.innerHTML =
-      `✅ <b>${srcName} → ${dstName}</b>` +
+      `✅ <b>${srcEl.value.split(',')[0].trim()} → ${dstEl.value.split(',')[0].trim()}</b>` +
       ` &nbsp;·&nbsp; <b>${totalKm} km</b>` +
       (totalMins ? ` &nbsp;·&nbsp; <b>${totalMins} min</b>` : '') +
-      ` &nbsp;·&nbsp; <b style="color:#10b981">${along.length} EV stations</b> within ${corKm} km` +
+      ` &nbsp;·&nbsp; <b>${along.length} EV stations</b> within ${corKm} km` +
       (along.length === 0
-        ? `<br><span style="color:#ef4444">No stations found — try a wider corridor.</span>`
-        : `<br><small style="color:#64748b">Click any coloured dot on the map for details.</small>`
+        ? `<br><span style="color:#f87171">No stations found — try a wider corridor.</span>`
+        : `<br><small style="color:var(--muted)">Click any coloured dot on the map for details.</small>`
       );
 
     map.fitBounds(routeLayer.getBounds(), { padding:[40,40] });
 
   } catch(err) {
-    console.error("Route error:", err);
-    box.style.background = '#fef2f2';
-    box.style.borderColor = '#fecaca';
-    box.style.color = '#991b1b';
+    box.style.background = 'rgba(248,113,113,0.08)';
+    box.style.borderColor = 'rgba(248,113,113,0.3)';
+    box.style.color = '#f87171';
     box.innerHTML = `❌ Error: ${err.message}`;
   }
 
-  findBtn.textContent = "🔍 Find Route";
-  findBtn.disabled = false;
+  btn.textContent = 'Find Route →'; btn.disabled = false;
 }
 
 </script>
