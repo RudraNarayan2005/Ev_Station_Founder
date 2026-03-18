@@ -12,8 +12,9 @@ import requests as http_requests
 
 app = Flask(__name__)
 
-# 🔐 SECRET KEY
-app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY")
+# 🔐 SECRET KEY — falls back to a dev key so the app never crashes on startup
+# In production (Render), always set SECRET_KEY as an environment variable.
+app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY") or "ev-finder-dev-fallback-key-change-in-prod"
 
 DATABASE = "users.db"
 df = None
