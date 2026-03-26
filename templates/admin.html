@@ -2,91 +2,579 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Admin Dashboard - EV Stations</title>
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel — EV Charge Finder</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-body{
-    font-family: Arial, sans-serif;
-    background:#f5f6fa;
-    margin:0;
-    padding:0;
-}
+    :root {
+        --green:     #00e5a0;
+        --green-dim: #00b37a;
+        --red:       #f87171;
+        --dark:      #080e12;
+        --dark2:     #0d1a22;
+        --card:      rgba(255,255,255,0.04);
+        --border:    rgba(255,255,255,0.08);
+        --text:      #e8f0f5;
+        --muted:     #7a9aac;
+    }
 
-header{
-    background:#2c3e50;
-    color:white;
-    padding:15px;
-    text-align:center;
-}
+    body {
+        font-family: 'DM Sans', sans-serif;
+        background: var(--dark);
+        color: var(--text);
+        min-height: 100vh;
+        padding-top: 72px;
+    }
 
-.container{
-    width:90%;
-    margin:auto;
-    margin-top:30px;
-}
+    /* Grid background */
+    body::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background-image:
+            linear-gradient(rgba(0,229,160,0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0,229,160,0.03) 1px, transparent 1px);
+        background-size: 60px 60px;
+        pointer-events: none;
+        z-index: 0;
+    }
 
-table{
-    width:100%;
-    border-collapse:collapse;
-    background:white;
-    box-shadow:0 2px 10px rgba(0,0,0,0.1);
-}
+    /* ── NAV ── */
+    nav {
+        position: fixed;
+        top: 0; left: 0; right: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 40px;
+        background: rgba(8,14,18,0.9);
+        backdrop-filter: blur(16px);
+        border-bottom: 1px solid var(--border);
+    }
 
-th, td{
-    padding:12px;
-    text-align:center;
-    border-bottom:1px solid #ddd;
-}
+    .nav-brand {
+        font-family: 'Syne', sans-serif;
+        font-weight: 800;
+        font-size: 18px;
+        color: var(--green);
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
 
-th{
-    background:#34495e;
-    color:white;
-}
+    .nav-brand .bolt {
+        width: 22px; height: 22px;
+        background: var(--green);
+        clip-path: polygon(60% 0%, 20% 50%, 50% 50%, 40% 100%, 80% 48%, 52% 48%);
+        flex-shrink: 0;
+    }
 
-tr:hover{
-    background:#f1f1f1;
-}
+    .nav-right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
 
+    .nav-badge {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--dark);
+        background: var(--green);
+        padding: 4px 10px;
+        border-radius: 6px;
+    }
+
+    .nav-link {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--muted);
+        text-decoration: none;
+        padding: 8px 16px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        transition: color 0.2s, border-color 0.2s;
+    }
+
+    .nav-link:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+
+    .nav-link.logout:hover { color: var(--red); border-color: rgba(248,113,113,0.3); }
+
+    /* ── PAGE WRAPPER ── */
+    .page {
+        position: relative;
+        z-index: 1;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 36px 24px 60px;
+    }
+
+    /* ── FLASH MESSAGES ── */
+    .flash-list { list-style: none; margin-bottom: 20px; }
+
+    .flash-list li {
+        padding: 12px 18px;
+        border-radius: 10px;
+        font-size: 14px;
+        margin-bottom: 8px;
+        border: 1px solid transparent;
+    }
+
+    .flash-list li.success {
+        background: rgba(0,229,160,0.08);
+        border-color: rgba(0,229,160,0.2);
+        color: var(--green);
+    }
+
+    .flash-list li.error {
+        background: rgba(248,113,113,0.08);
+        border-color: rgba(248,113,113,0.2);
+        color: var(--red);
+    }
+
+    /* ── PAGE HEADER ── */
+    .page-header {
+        margin-bottom: 32px;
+    }
+
+    .page-header h1 {
+        font-family: 'Syne', sans-serif;
+        font-size: 28px;
+        font-weight: 800;
+        letter-spacing: -0.5px;
+        margin-bottom: 4px;
+    }
+
+    .page-header p {
+        font-size: 13px;
+        color: var(--muted);
+    }
+
+    /* ── STAT CARDS ── */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 16px;
+        margin-bottom: 36px;
+    }
+
+    .stat-card {
+        background: rgba(13,26,34,0.92);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 22px 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .stat-label {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--muted);
+    }
+
+    .stat-value {
+        font-family: 'Syne', sans-serif;
+        font-size: 32px;
+        font-weight: 800;
+        color: var(--green);
+        line-height: 1;
+    }
+
+    /* ── SECTION ── */
+    .section {
+        background: rgba(13,26,34,0.92);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        overflow: hidden;
+        margin-bottom: 32px;
+    }
+
+    .section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 24px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .section-title {
+        font-family: 'Syne', sans-serif;
+        font-size: 15px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .section-title .dot {
+        width: 6px; height: 6px;
+        border-radius: 50%;
+        background: var(--green);
+        flex-shrink: 0;
+    }
+
+    .section-count {
+        font-size: 12px;
+        color: var(--muted);
+        background: rgba(255,255,255,0.04);
+        border: 1px solid var(--border);
+        padding: 4px 12px;
+        border-radius: 20px;
+    }
+
+    /* ── TABLE ── */
+    .table-wrap { overflow-x: auto; }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
+
+    thead th {
+        padding: 12px 16px;
+        text-align: left;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--muted);
+        background: rgba(255,255,255,0.02);
+        border-bottom: 1px solid var(--border);
+        white-space: nowrap;
+    }
+
+    tbody td {
+        padding: 13px 16px;
+        border-bottom: 1px solid rgba(255,255,255,0.04);
+        color: var(--text);
+        vertical-align: middle;
+    }
+
+    tbody tr:last-child td { border-bottom: none; }
+
+    tbody tr:hover td { background: rgba(0,229,160,0.03); }
+
+    .td-muted { color: var(--muted); font-size: 12px; }
+
+    .id-badge {
+        display: inline-block;
+        font-family: 'Syne', sans-serif;
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--muted);
+        background: rgba(255,255,255,0.04);
+        border: 1px solid var(--border);
+        padding: 2px 8px;
+        border-radius: 6px;
+    }
+
+    /* Delete button */
+    .btn-delete {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 6px 14px;
+        background: rgba(248,113,113,0.08);
+        border: 1px solid rgba(248,113,113,0.25);
+        border-radius: 8px;
+        color: var(--red);
+        font-family: 'DM Sans', sans-serif;
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.2s, border-color 0.2s;
+    }
+
+    .btn-delete:hover {
+        background: rgba(248,113,113,0.16);
+        border-color: rgba(248,113,113,0.5);
+    }
+
+    /* Empty state */
+    .empty {
+        padding: 40px;
+        text-align: center;
+        color: var(--muted);
+        font-size: 14px;
+    }
+
+    /* Confirm modal */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.6);
+        backdrop-filter: blur(4px);
+        z-index: 200;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-overlay.active { display: flex; }
+
+    .modal {
+        background: #0d1a22;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 32px;
+        max-width: 380px;
+        width: 90%;
+        text-align: center;
+    }
+
+    .modal h3 {
+        font-family: 'Syne', sans-serif;
+        font-size: 18px;
+        font-weight: 700;
+        margin-bottom: 10px;
+    }
+
+    .modal p {
+        font-size: 13px;
+        color: var(--muted);
+        margin-bottom: 24px;
+        line-height: 1.6;
+    }
+
+    .modal-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+    }
+
+    .btn-cancel {
+        padding: 10px 22px;
+        background: transparent;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        color: var(--muted);
+        font-family: 'DM Sans', sans-serif;
+        font-size: 13px;
+        cursor: pointer;
+        transition: border-color 0.2s, color 0.2s;
+    }
+
+    .btn-cancel:hover { border-color: rgba(255,255,255,0.2); color: var(--text); }
+
+    .btn-confirm {
+        padding: 10px 22px;
+        background: var(--red);
+        border: none;
+        border-radius: 10px;
+        color: white;
+        font-family: 'DM Sans', sans-serif;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: opacity 0.2s;
+    }
+
+    .btn-confirm:hover { opacity: 0.85; }
+
+    @media (max-width: 600px) {
+        nav { padding: 14px 20px; }
+        .page { padding: 24px 16px 48px; }
+        .stats-grid { grid-template-columns: 1fr 1fr; }
+    }
 </style>
 </head>
-
 <body>
 
-<header>
-<h2>⚡ EV Charging Station Admin Panel</h2>
-<p>Monitor charging stations</p>
-</header>
+<!-- ── NAV ── -->
+<nav>
+    <a href="/" class="nav-brand">
+        <div class="bolt"></div>
+        EV Charge Finder
+    </a>
+    <div class="nav-right">
+        <span class="nav-badge">⚡ Admin</span>
+        <a href="/dashboard" class="nav-link">Dashboard</a>
+        <a href="/logout" class="nav-link logout">Logout</a>
+    </div>
+</nav>
 
-<div class="container">
-
-<table>
-
-<tr>
-<th>#</th>
-<th>Station Name</th>
-<th>City</th>
-<th>Latitude</th>
-<th>Longitude</th>
-<th>Type</th>
-</tr>
-
-{% for station in stations %}
-
-<tr>
-<td>{{ loop.index }}</td>
-<td>{{ station.name }}</td>
-<td>{{ station.city }}</td>
-<td>{{ station.lattitude }}</td>
-<td>{{ station.longitude }}</td>
-<td>{{ station.type }}</td>
-</tr>
-
-{% endfor %}
-
-</table>
-
+<!-- ── CONFIRM DELETE MODAL ── -->
+<div class="modal-overlay" id="modal">
+    <div class="modal">
+        <h3>Delete User?</h3>
+        <p id="modal-msg">This action cannot be undone.</p>
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+            <button class="btn-confirm" id="modal-confirm-btn">Delete</button>
+        </div>
+    </div>
 </div>
+
+<div class="page">
+
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <ul class="flash-list">
+        {% for category, message in messages %}
+        <li class="{{ category }}">{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+    {% endwith %}
+
+    <!-- Page header -->
+    <div class="page-header">
+        <h1>Admin Panel</h1>
+        <p>Logged in as <strong style="color:var(--green)">{{ username }}</strong> · Full system overview</p>
+    </div>
+
+    <!-- Stat cards -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-label">Registered Users</div>
+            <div class="stat-value">{{ total_users }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">EV Stations (CSV)</div>
+            <div class="stat-value">{{ total_stations }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Stations Shown</div>
+            <div class="stat-value">{{ stations | length }}</div>
+        </div>
+    </div>
+
+    <!-- ── USERS TABLE ── -->
+    <div class="section">
+        <div class="section-header">
+            <div class="section-title">
+                <div class="dot"></div>
+                Registered Users
+            </div>
+            <span class="section-count">{{ total_users }} total</span>
+        </div>
+
+        <div class="table-wrap">
+            {% if users %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Joined</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td><span class="id-badge">#{{ user['id'] }}</span></td>
+                        <td>{{ user['username'] }}</td>
+                        <td class="td-muted">{{ user['email'] }}</td>
+                        <td class="td-muted">{{ user['created_at'][:10] if user['created_at'] else '—' }}</td>
+                        <td>
+                            <button class="btn-delete"
+                                onclick="confirmDelete({{ user['id'] }}, '{{ user['username'] }}')">
+                                ✕ Delete
+                            </button>
+                            <!-- Hidden form, submitted by JS -->
+                            <form id="del-form-{{ user['id'] }}"
+                                  action="/admin/delete/{{ user['id'] }}"
+                                  method="POST"
+                                  style="display:none;">
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty">No users registered yet.</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- ── STATIONS TABLE ── -->
+    <div class="section">
+        <div class="section-header">
+            <div class="section-title">
+                <div class="dot"></div>
+                EV Stations
+            </div>
+            <span class="section-count">
+                showing {{ stations | length }} of {{ total_stations }}
+            </span>
+        </div>
+
+        <div class="table-wrap">
+            {% if stations %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Station Name</th>
+                        <th>City</th>
+                        <th>State</th>
+                        <th>Latitude</th>
+                        <th>Longitude</th>
+                        <th>Type</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in stations %}
+                    <tr>
+                        <td class="td-muted">{{ loop.index }}</td>
+                        <td>{{ s.name }}</td>
+                        <td class="td-muted">{{ s.city }}</td>
+                        <td class="td-muted">{{ s.state }}</td>
+                        <td class="td-muted">{{ s.lattitude }}</td>
+                        <td class="td-muted">{{ s.longitude }}</td>
+                        <td class="td-muted">{{ s.type }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty">No station data loaded.</div>
+            {% endif %}
+        </div>
+    </div>
+
+</div><!-- /page -->
+
+<script>
+    let pendingFormId = null;
+
+    function confirmDelete(userId, username) {
+        pendingFormId = 'del-form-' + userId;
+        document.getElementById('modal-msg').textContent =
+            'Delete user "' + username + '" (#' + userId + ')? This cannot be undone.';
+        document.getElementById('modal').classList.add('active');
+    }
+
+    document.getElementById('modal-confirm-btn').addEventListener('click', function () {
+        if (pendingFormId) {
+            document.getElementById(pendingFormId).submit();
+        }
+    });
+
+    function closeModal() {
+        document.getElementById('modal').classList.remove('active');
+        pendingFormId = null;
+    }
+
+    // Close modal on overlay click
+    document.getElementById('modal').addEventListener('click', function (e) {
+        if (e.target === this) closeModal();
+    });
+</script>
 
 </body>
 </html>
