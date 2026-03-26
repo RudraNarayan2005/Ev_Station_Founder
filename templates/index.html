@@ -1,13 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Character encoding -->
     <meta charset="UTF-8">
+
+    <!-- Page title (shown in browser tab) -->
     <title>EV Charge Finder - GPS Portal</title>
+
+    <!-- Makes website responsive on mobile -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Importing custom fonts (UI/branding) -->
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+
     <style>
+        /* Reset default browser spacing and set box model */
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+        /* Global color variables (used throughout UI) */
         :root {
             --green: #00e5a0;
             --green-dim: #00b37a;
@@ -19,508 +29,177 @@
             --muted: #7a9aac;
         }
 
+        /* Main page styling */
         body {
             font-family: 'DM Sans', sans-serif;
             background: var(--dark);
             color: var(--text);
-            min-height: 100vh;
             display: flex;
-            flex-direction: column;
-            align-items: center;
             justify-content: center;
-            padding: 24px;
-            overflow-x: hidden;
+            align-items: center;
         }
 
-        body::before {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background-image:
-                linear-gradient(rgba(0,229,160,0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0,229,160,0.03) 1px, transparent 1px);
-            background-size: 60px 60px;
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        body::after {
-            content: '';
-            position: fixed;
-            width: 500px; height: 500px;
-            background: radial-gradient(circle, rgba(0,229,160,0.07) 0%, transparent 70%);
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            pointer-events: none;
-            z-index: 0;
-        }
-
+        /* Navigation bar (top section) */
         nav {
             position: fixed;
-            top: 0; left: 0; right: 0;
-            z-index: 100;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 16px 40px;
-            background: rgba(8,14,18,0.85);
-            backdrop-filter: blur(16px);
-            border-bottom: 1px solid var(--border);
-        }
-
-        .nav-brand {
-            font-family: 'Syne', sans-serif;
-            font-weight: 800;
-            font-size: 18px;
-            color: var(--green);
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .nav-brand .bolt {
-            width: 24px; height: 24px;
-            background: var(--green);
-            clip-path: polygon(60% 0%, 20% 50%, 50% 50%, 40% 100%, 80% 48%, 52% 48%);
-            flex-shrink: 0;
-        }
-
-        .logout-link {
-            font-size: 13px;
-            font-weight: 500;
-            color: var(--muted);
-            text-decoration: none;
-            padding: 8px 16px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            transition: color 0.2s, border-color 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .logout-link:hover { color: #f87171; border-color: rgba(248,113,113,0.3); }
-
-        .card {
-            position: relative;
-            z-index: 1;
+            top: 0;
             width: 100%;
+        }
+
+        /* Main card container */
+        .card {
             max-width: 480px;
-            background: rgba(13,26,34,0.92);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 36px;
             margin-top: 80px;
-            animation: fadeUp 0.5s ease both;
         }
 
-        .card-header {
-            text-align: center;
-            margin-bottom: 28px;
-        }
-
-        .icon-wrap {
-            width: 52px; height: 52px;
-            background: rgba(0,229,160,0.1);
-            border: 1px solid rgba(0,229,160,0.2);
-            border-radius: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 14px;
-        }
-
-        .icon-bolt {
-            width: 24px; height: 24px;
-            background: var(--green);
-            clip-path: polygon(60% 0%, 20% 50%, 50% 50%, 40% 100%, 80% 48%, 52% 48%);
-        }
-
-        .card-header h1 {
-            font-family: 'Syne', sans-serif;
-            font-size: 22px;
-            font-weight: 800;
-            letter-spacing: -0.5px;
-            margin-bottom: 4px;
-        }
-
-        .card-header p {
-            font-size: 13px;
-            color: var(--muted);
-            font-weight: 300;
-        }
-
+        /* Section block (used for battery, GPS, coordinates) */
         .section-block {
-            background: rgba(255,255,255,0.025);
-            border: 1px solid var(--border);
-            border-radius: 14px;
             padding: 18px;
-            margin-bottom: 12px;
         }
 
-        .block-label {
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            color: var(--muted);
-            margin-bottom: 14px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .block-label .dot {
-            width: 5px; height: 5px;
-            border-radius: 50%;
-            background: var(--green);
-        }
-
-        /* Battery visual */
+        /* Battery UI container */
         .battery-display {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 12px;
         }
 
-        .battery-body {
-            flex: 1;
-            height: 20px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid var(--border);
-            border-radius: 5px;
-            overflow: hidden;
-        }
-
+        /* Battery fill animation */
         .battery-fill {
-            height: 100%;
             width: 50%;
-            background: var(--green);
-            border-radius: 4px;
-            transition: width 0.15s, background 0.25s;
         }
 
-        .battery-tip {
-            width: 5px; height: 9px;
-            background: var(--border);
-            border-radius: 0 3px 3px 0;
-            margin-left: -1px;
-            flex-shrink: 0;
-        }
-
-        .battery-pct {
-            font-family: 'Syne', sans-serif;
-            font-size: 20px;
-            font-weight: 800;
-            color: var(--green);
-            min-width: 50px;
-            text-align: right;
-            transition: color 0.25s;
-        }
-
-        input[type="range"] {
-            -webkit-appearance: none;
-            width: 100%;
-            height: 4px;
-            border-radius: 4px;
-            background: rgba(255,255,255,0.08);
-            outline: none;
-        }
-
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 18px; height: 18px;
-            border-radius: 50%;
-            background: var(--green);
-            cursor: pointer;
-            border: 3px solid var(--dark);
-            box-shadow: 0 0 0 1px var(--green);
-            transition: transform 0.15s;
-        }
-
-        input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
-
-        .range-hint {
-            display: flex;
-            justify-content: space-between;
-            font-size: 11px;
-            color: var(--muted);
-            margin-top: 6px;
-        }
-
-        /* GPS row */
-        .gps-row {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
+        /* GPS button styling */
         #gps-btn {
-            flex-shrink: 0;
-            width: 48px; height: 48px;
-            border-radius: 12px;
-            background: rgba(0,229,160,0.08);
-            border: 1px solid rgba(0,229,160,0.25);
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.2s, transform 0.15s;
         }
 
-        #gps-btn:hover { background: rgba(0,229,160,0.16); transform: scale(1.05); }
-        #gps-btn:active { transform: scale(0.96); }
-
-        .gps-icon {
-            width: 20px; height: 20px;
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .gps-ring {
-            width: 16px; height: 16px;
-            border: 2px solid var(--green);
-            border-radius: 50%;
-            position: absolute;
-        }
-
-        .gps-dot-inner {
-            width: 5px; height: 5px;
-            background: var(--green);
-            border-radius: 50%;
-            position: relative;
-            z-index: 1;
-        }
-
-        .gps-line-h, .gps-line-v {
-            position: absolute;
-            background: var(--green);
-            border-radius: 1px;
-        }
-        .gps-line-h { width: 5px; height: 1.5px; left: -7px; }
-        .gps-line-v { height: 5px; width: 1.5px; top: -7px; }
-
-        #gps-status {
-            flex: 1;
-            font-size: 13px;
-            color: var(--muted);
-            line-height: 1.5;
-            font-weight: 300;
-        }
-
-        #gps-status.success { color: var(--green); }
-        #gps-status.error   { color: #f87171; }
-
-        /* Coord inputs */
+        /* Coordinates input grid */
         .coords-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 10px;
         }
 
-        .input-wrap label {
-            display: block;
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            color: var(--muted);
-            margin-bottom: 6px;
-        }
-
-        .input-wrap input {
-            width: 100%;
-            padding: 11px 13px;
-            background: rgba(255,255,255,0.04);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            color: var(--text);
-            font-family: 'DM Sans', sans-serif;
-            font-size: 14px;
-            outline: none;
-            transition: border-color 0.2s, background 0.2s;
-        }
-
-        .input-wrap input:focus {
-            border-color: rgba(0,229,160,0.4);
-            background: rgba(0,229,160,0.03);
-        }
-
-        .input-wrap input::placeholder { color: rgba(122,154,172,0.4); }
-
+        /* Submit button styling */
         .find-btn {
-            width: 100%;
-            padding: 15px;
-            background: var(--green);
-            color: var(--dark);
-            font-family: 'Syne', sans-serif;
-            font-size: 15px;
-            font-weight: 800;
-            border: none;
-            border-radius: 12px;
             cursor: pointer;
-            margin-top: 18px;
-            transition: background 0.2s, transform 0.15s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            letter-spacing: 0.02em;
-        }
-
-        .find-btn:hover { background: var(--green-dim); transform: translateY(-2px); }
-        .find-btn:active { transform: translateY(0); }
-
-        .btn-arrow { transition: transform 0.2s; display: inline-block; }
-        .find-btn:hover .btn-arrow { transform: translateX(4px); }
-
-        @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        @media (max-width: 480px) {
-            .card { padding: 22px 18px; margin-top: 72px; }
-            nav { padding: 14px 20px; }
         }
     </style>
 </head>
+
 <body>
 
+<!-- Navigation bar with logo and logout -->
 <nav>
     <a href="/" class="nav-brand">
+        <!-- Lightning icon (EV theme) -->
         <div class="bolt"></div>
         EV Charge Finder
     </a>
+
+    <!-- Logout button -->
     <a href="/logout" class="logout-link">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-            <polyline points="16 17 21 12 16 7"/>
-            <line x1="21" y1="12" x2="9" y2="12"/>
-        </svg>
         Logout
     </a>
 </nav>
 
+<!-- Main UI card -->
 <div class="card">
+
+    <!-- Header section -->
     <div class="card-header">
-        <div class="icon-wrap"><div class="icon-bolt"></div></div>
         <h1>Find EV Stations</h1>
-        <p>Optimised for your current range &amp; location</p>
+        <p>Optimised for your current range & location</p>
     </div>
 
+    <!-- Form to send data to backend -->
     <form method="POST" action="/result">
 
-        <!-- Battery -->
+        <!-- Battery Section -->
         <div class="section-block">
-            <div class="block-label"><div class="dot"></div> Battery Level</div>
+            <div class="block-label">Battery Level</div>
+
+            <!-- Battery visual bar -->
             <div class="battery-display">
                 <div class="battery-body">
                     <div class="battery-fill" id="batt-fill"></div>
                 </div>
-                <div class="battery-tip"></div>
                 <div class="battery-pct" id="batt-pct">50%</div>
             </div>
-            <input type="range" name="battery_percent" id="battery-slider"
+
+            <!-- Slider input -->
+            <input type="range" name="battery_percent"
                    min="1" max="100" value="50"
                    oninput="updateBattery(this.value)">
-            <div class="range-hint"><span>1%</span><span>100%</span></div>
         </div>
 
-        <!-- GPS -->
+        <!-- GPS Section -->
         <div class="section-block">
-            <div class="block-label"><div class="dot"></div> Your Location</div>
+            <div class="block-label">Your Location</div>
+
             <div class="gps-row">
-                <button type="button" id="gps-btn" onclick="getLiveGPS()" title="Detect GPS location">
-                    <div class="gps-icon">
-                        <div class="gps-ring"></div>
-                        <div class="gps-line-h"></div>
-                        <div class="gps-line-v"></div>
-                        <div class="gps-dot-inner"></div>
-                    </div>
+                <!-- Button to fetch live GPS -->
+                <button type="button" onclick="getLiveGPS()">
+                    Get GPS
                 </button>
-                <div id="gps-status">Tap the target to detect your location</div>
+
+                <!-- GPS status message -->
+                <div id="gps-status">
+                    Tap to detect your location
+                </div>
             </div>
         </div>
 
-        <!-- Coordinates -->
+        <!-- Coordinates Section -->
         <div class="section-block">
-            <div class="block-label"><div class="dot"></div> Coordinates</div>
-            <div class="coords-grid">
-                <div class="input-wrap">
-                    <label>Latitude</label>
-                    <input type="number" step="any" id="latitude" name="latitude"
-                           placeholder="e.g. 20.2961" required>
-                </div>
-                <div class="input-wrap">
-                    <label>Longitude</label>
-                    <input type="number" step="any" id="longitude" name="longitude"
-                           placeholder="e.g. 85.8245" required>
-                </div>
-            </div>
+            <div class="block-label">Coordinates</div>
+
+            <!-- Latitude and Longitude inputs -->
+            <input type="number" id="latitude" name="latitude" placeholder="Latitude" required>
+            <input type="number" id="longitude" name="longitude" placeholder="Longitude" required>
         </div>
 
+        <!-- Submit button -->
         <button type="submit" class="find-btn">
             Get Reachable Stations
-            <span class="btn-arrow">→</span>
         </button>
 
     </form>
 </div>
 
 <script>
+    /* Updates battery UI dynamically */
     function updateBattery(val) {
         val = parseInt(val);
-        const fill = document.getElementById('batt-fill');
-        const pct  = document.getElementById('batt-pct');
-        fill.style.width = val + '%';
-        pct.innerText = val + '%';
-        if (val < 20) {
-            fill.style.background = '#f87171';
-            pct.style.color = '#f87171';
-        } else if (val < 50) {
-            fill.style.background = '#fbbf24';
-            pct.style.color = '#fbbf24';
-        } else {
-            fill.style.background = 'var(--green)';
-            pct.style.color = 'var(--green)';
-        }
+
+        // Update width and text
+        document.getElementById('batt-fill').style.width = val + '%';
+        document.getElementById('batt-pct').innerText = val + '%';
     }
 
+    /* Fetch live GPS location */
     function getLiveGPS() {
-        const status = document.getElementById('gps-status');
-        const lat    = document.getElementById('latitude');
-        const lon    = document.getElementById('longitude');
-        status.className = '';
-        status.innerHTML = '<span style="display:inline-block;animation:spin 0.8s linear infinite;margin-right:6px;">◌</span> Fetching satellite data…';
+        const lat = document.getElementById('latitude');
+        const lon = document.getElementById('longitude');
+
+        // Check if browser supports GPS
         if (!navigator.geolocation) {
-            status.className = 'error';
-            status.innerText = 'GPS not supported. Enter coordinates manually.';
+            alert("GPS not supported");
             return;
         }
-        navigator.geolocation.getCurrentPosition(
-            function(pos) {
-                lat.value = pos.coords.latitude.toFixed(6);
-                lon.value = pos.coords.longitude.toFixed(6);
-                status.className = 'success';
-                status.innerHTML = '✓ Location locked — ' + lat.value + ', ' + lon.value;
-            },
-            function() {
-                status.className = 'error';
-                status.innerText = 'GPS denied. Enter coordinates manually.';
-            },
-            { enableHighAccuracy: true, timeout: 10000 }
-        );
+
+        // Get current position
+        navigator.geolocation.getCurrentPosition(function(pos) {
+            lat.value = pos.coords.latitude;
+            lon.value = pos.coords.longitude;
+        });
     }
 
+    /* Initialize battery display */
     updateBattery(50);
+
+    /* Auto-fetch GPS on page load */
     window.onload = getLiveGPS;
 </script>
+
 </body>
 </html>
