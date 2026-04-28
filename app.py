@@ -4,9 +4,11 @@ import pandas as pd
 import json
 import math
 import os
-import sqlite3
+import psycopg2
+from psycopg2.extras import RealDictCursor
 import numpy as np
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.neighbors import BallTree
 from werkzeug.security import generate_password_hash, check_password_hash
 import requests as http_requests
 
@@ -16,7 +18,7 @@ app = Flask(__name__)
 # In production (Render), always set SECRET_KEY as an environment variable.
 app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY") or "ev-finder-dev-fallback-key-change-in-prod"
 
-DATABASE = "users.db"
+DATABASE_URL = os.environ.get("DATABASE_URL")
 df = None
 ml_model = None
 clusterer = None
@@ -33,16 +35,16 @@ ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "admin")
 # ==============================
 
 def get_db_connection():
-    conn = sqlite3.connect(DATABASE)
-    conn.row_factory = sqlite3.Row
+    conn = psycopg2.connect(DATABASE_URL)
     return conn
 
 
 def init_db():
     conn = get_db_connection()
-    conn.execute('''
+    cur = conn.cursor()
+    cur.execute('''
         CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             username TEXT UNIQUE NOT NULL,
             email TEXT UNIQUE NOT NULL,
             password TEXT NOT NULL,
@@ -50,6 +52,7 @@ def init_db():
         )
     ''')
     conn.commit()
+    cur.close()
     conn.close()
 
 
@@ -109,8 +112,12 @@ def train_demand_model():
     try:
         X = df[['lattitude', 'longitude']].values
 
-        # Simulated demand values
-        y = np.random.randint(20, 200, size=len(df))
+        # Density-based demand: more nearby stations = higher demand area
+        rad = np.radians(X)
+        tree = BallTree(rad, metric='haversine')
+        # Count stations within 10km (10/6371 in radians)
+        counts = tree.query_radius(rad, r=10 / 6371, count_only=True)
+        y = np.clip(counts * 12, 20, 200).astype(float)
 
         ml_model = RandomForestRegressor(n_estimators=50)
         ml_model.fit(X, y)
@@ -201,20 +208,22 @@ def register():
         try:
 
             conn = get_db_connection()
+            cur = conn.cursor()
 
-            conn.execute(
-                "INSERT INTO users (username,email,password) VALUES (?,?,?)",
+            cur.execute(
+                "INSERT INTO users (username,email,password) VALUES (%s,%s,%s)",
                 (username, email, password)
             )
 
             conn.commit()
+            cur.close()
             conn.close()
 
             flash("Account created successfully!", "success")
 
             return redirect(url_for('login'))
 
-        except sqlite3.IntegrityError:
+        except psycopg2.errors.UniqueViolation:
             flash("Username or Email already exists!", "error")
 
     return render_template("register.html")
@@ -233,12 +242,15 @@ def login():
         password = request.form['password']
 
         conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
 
-        user = conn.execute(
-            "SELECT * FROM users WHERE username=?",
+        cur.execute(
+            "SELECT * FROM users WHERE username=%s",
             (username,)
-        ).fetchone()
+        )
+        user = cur.fetchone()
 
+        cur.close()
         conn.close()
 
         if user and check_password_hash(user['password'], password):
@@ -562,9 +574,12 @@ def admin():
         return redirect(url_for('dashboard'))
 
     conn = get_db_connection()
-    users = conn.execute(
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute(
         "SELECT id, username, email, created_at FROM users ORDER BY created_at DESC"
-    ).fetchall()
+    )
+    users = cur.fetchall()
+    cur.close()
     conn.close()
 
     total_users    = len(users)
@@ -613,8 +628,10 @@ def admin_delete_user(user_id):
         return redirect(url_for('admin'))
 
     conn = get_db_connection()
-    conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
+    cur = conn.cursor()
+    cur.execute("DELETE FROM users WHERE id = %s", (user_id,))
     conn.commit()
+    cur.close()
     conn.close()
 
     flash(f"User #{user_id} deleted successfully.", "success")
