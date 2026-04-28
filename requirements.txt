@@ -5,4 +5,4 @@ numpy
 scikit-learn
 Werkzeug
 requests
-joblib
+psycopg2-binary
