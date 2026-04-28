@@ -6,6 +6,14 @@ services:
     startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --timeout 120 --workers 1
     envVars:
       - key: SECRET_KEY
-        generateValue: true        # Render auto-generates a secure random value
+        generateValue: true
       - key: OPENCAGE_API_KEY
-        sync: false                # You set this manually in Render dashboard
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ev-users-db
+          property: connectionString
+
+databases:
+  - name: ev-users-db
+    plan: free
