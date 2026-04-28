@@ -110,7 +110,7 @@ def train_demand_model():
         return
 
     try:
-        X = df[['lattitude', 'longitude']].values
+        X = df[['lattitude', 'longitude']].dropna().values
 
         # Density-based demand: more nearby stations = higher demand area
         rad = np.radians(X)
